@@ -1,18 +1,53 @@
+import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { getHomeSections } from "@/lib/domain/home";
+import { getVesReferenceRate } from "@/lib/domain/currency";
+import { HomeSectionRenderer } from "@/components/home/home-section-renderer";
+import { buildOrganizationJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
+
+export const revalidate = 60;
+export const metadata = {
+  alternates: { canonical: "/" },
+};
+
 /**
- * Home pública — placeholder de la Fase 0.
- *
- * El Home real (hero administrable, categorías visuales, secciones
- * dinámicas) se construye en la Fase 7 sobre el catálogo de la Fase 2. Esta
- * página solo confirma que el proyecto arrancó correctamente.
+ * Home pública (sección 5/19/28 del plan) — completamente compuesta de
+ * bloques administrables desde `/admin/marketing/home`, en el orden que
+ * el admin haya definido. Si todavía no hay bloques configurados (recién
+ * desplegado), muestra un estado vacío honesto en vez de una página en
+ * blanco.
  */
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createSupabaseServerClient();
+  const [sections, vesRate] = await Promise.all([
+    getHomeSections(supabase),
+    getVesReferenceRate(supabase),
+  ]);
+
+  const organizationJsonLd = buildOrganizationJsonLd();
+
+  if (sections.length === 0) {
+    return (
+      <main className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-6 text-center">
+        <script {...jsonLdScriptProps(organizationJsonLd)} />
+        <h1 className="text-2xl font-semibold">Zoe Shoes</h1>
+        <p className="max-w-md text-[var(--color-muted-foreground)]">
+          El Home todavía no tiene bloques configurados. Ve a Marketing → Home en el panel
+          admin para armarlo.
+        </p>
+      </main>
+    );
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
-      <h1 className="text-2xl font-semibold">Zoe Shoes</h1>
-      <p className="max-w-md text-[var(--color-muted-foreground)]">
-        El catálogo está en construcción. Fase 0 (fundaciones) completada — el Home real
-        llega en una fase posterior del roadmap.
-      </p>
+    <main className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-8">
+      <script {...jsonLdScriptProps(organizationJsonLd)} />
+      {sections.map((section) => (
+        <HomeSectionRenderer
+          key={section.id}
+          section={section}
+          vesRate={vesRate?.rate ?? null}
+        />
+      ))}
     </main>
   );
 }

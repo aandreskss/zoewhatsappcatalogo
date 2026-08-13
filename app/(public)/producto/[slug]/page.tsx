@@ -5,6 +5,12 @@ import { getPublishedProductBySlug } from "@/lib/domain/catalog";
 import { getAvailabilityForVariants } from "@/lib/domain/inventory";
 import { getVesReferenceRate } from "@/lib/domain/currency";
 import { ProductVariantPicker } from "@/components/product/product-variant-picker";
+import { ViewProductTracker } from "@/components/analytics/view-product-tracker";
+import {
+  buildProductJsonLd,
+  buildBreadcrumbJsonLd,
+  jsonLdScriptProps,
+} from "@/lib/seo/json-ld";
 
 export const revalidate = 60;
 
@@ -18,9 +24,27 @@ export async function generateMetadata({
   const product = await getPublishedProductBySlug(supabase, slug);
   if (!product) return {};
 
+  const title = product.seoTitle ?? product.name;
+  const description = product.seoDescription ?? product.descriptionShort ?? undefined;
+  const primaryImage = product.images[0]?.url;
+
   return {
-    title: product.seoTitle ?? product.name,
-    description: product.seoDescription ?? product.descriptionShort ?? undefined,
+    title,
+    description,
+    alternates: { canonical: `/producto/${product.slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `/producto/${product.slug}`,
+      type: "website",
+      images: primaryImage ? [{ url: primaryImage }] : undefined,
+    },
+    twitter: {
+      card: primaryImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: primaryImage ? [primaryImage] : undefined,
+    },
   };
 }
 
@@ -51,8 +75,28 @@ export default async function ProductPage({
     );
   }
 
+  const prices = product.variants.map((v) => v.priceUsd);
+  const productJsonLd = buildProductJsonLd({
+    name: product.name,
+    description: product.descriptionShort ?? product.description,
+    slug: product.slug,
+    sku: product.sku,
+    imageUrls: product.images.map((img) => img.url),
+    minPriceUsd: prices.length > 0 ? Math.min(...prices) : 0,
+    maxPriceUsd: prices.length > 0 ? Math.max(...prices) : 0,
+    hasStock: [...availableByVariant.values()].some((qty) => qty > 0),
+  });
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Inicio", path: "/" },
+    { name: "Catálogo", path: "/catalogo" },
+    { name: product.name, path: `/producto/${product.slug}` },
+  ]);
+
   return (
     <main className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-8 md:grid-cols-2">
+      <script {...jsonLdScriptProps(productJsonLd)} />
+      <script {...jsonLdScriptProps(breadcrumbJsonLd)} />
+      <ViewProductTracker productId={product.id} productName={product.name} />
       <div className="flex flex-col gap-2">
         <div className="relative aspect-square overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-muted)]">
           {product.images[0] ? (

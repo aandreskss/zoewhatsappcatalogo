@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   };
 
   try {
-    const result = await createOrder(supabase, { cartId: cart.id, input });
+    const result = await createOrder(supabase, { cartId: cart.id, input, sessionId });
     return NextResponse.json(
       {
         orderNumber: result.orderNumber,

@@ -10,6 +10,7 @@ import {
   generateUniqueSlug,
   createVariantWithOptions,
   recordSlugChangeIfNeeded,
+  revalidateProductPublicPaths,
 } from "@/lib/domain/admin-catalog";
 
 export interface FormState {
@@ -89,7 +90,7 @@ export async function updateProductStatus(
 
   revalidatePath("/admin/productos");
   revalidatePath(`/admin/productos/${productId}`);
-  revalidatePath("/catalogo");
+  await revalidateProductPublicPaths(supabase, productId);
 }
 
 export async function updateProductName(
@@ -121,7 +122,7 @@ export async function updateProductName(
   void admin; // reservado para audit log detallado en una fase posterior
 
   revalidatePath(`/admin/productos/${productId}`);
-  revalidatePath("/catalogo");
+  await revalidateProductPublicPaths(supabase, productId);
   return { error: null };
 }
 
@@ -163,6 +164,7 @@ export async function addVariantAction(
   }
 
   revalidatePath(`/admin/productos/${productId}`);
+  await revalidateProductPublicPaths(supabase, productId);
   return { error: null };
 }
 
@@ -195,7 +197,7 @@ export async function addImageAction(
   if (error) return { error: error.message };
 
   revalidatePath(`/admin/productos/${productId}`);
-  revalidatePath("/catalogo");
+  await revalidateProductPublicPaths(supabase, productId);
   return { error: null };
 }
 
@@ -249,5 +251,5 @@ export async function setInventoryAction(
   if (movementError) throw movementError;
 
   revalidatePath(`/admin/productos/${productId}`);
-  revalidatePath("/catalogo");
+  await revalidateProductPublicPaths(supabase, productId);
 }

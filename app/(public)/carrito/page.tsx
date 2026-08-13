@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/components/cart/cart-context";
+import { useAnalytics } from "@/components/analytics/analytics-provider";
 import { Button } from "@/components/ui/button";
 import { formatUsd } from "@/lib/domain/pricing";
 
@@ -14,6 +15,7 @@ import { formatUsd } from "@/lib/domain/pricing";
  */
 export default function CartPage() {
   const { items, isLoading, subtotalUsd, updateQuantity, removeItem } = useCart();
+  const track = useAnalytics();
 
   if (isLoading) {
     return <main className="mx-auto max-w-2xl px-4 py-8">Cargando carrito…</main>;
@@ -85,7 +87,17 @@ export default function CartPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => void removeItem(item.id)}
+                  onClick={() => {
+                    track("remove_from_cart", {
+                      entityType: "product_variant",
+                      entityId: item.variantId,
+                      metadata: {
+                        productName: item.productName,
+                        quantity: item.quantity,
+                      },
+                    });
+                    void removeItem(item.id);
+                  }}
                   className="text-xs text-[var(--color-muted-foreground)] underline"
                 >
                   Eliminar
@@ -107,7 +119,16 @@ export default function CartPage() {
       </div>
 
       <Button asChild size="lg" className="mt-4 w-full">
-        <Link href="/checkout">Finalizar pedido</Link>
+        <Link
+          href="/checkout"
+          onClick={() =>
+            track("begin_checkout", {
+              metadata: { itemCount: items.length, subtotalUsd },
+            })
+          }
+        >
+          Finalizar pedido
+        </Link>
       </Button>
     </main>
   );

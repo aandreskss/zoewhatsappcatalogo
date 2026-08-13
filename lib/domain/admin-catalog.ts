@@ -1,4 +1,5 @@
 import "server-only";
+import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/db/supabase/types";
 import { slugify, ensureUniqueSlug } from "@/lib/domain/slug";
@@ -97,6 +98,28 @@ export async function getOrCreateOptionValue(
     .single();
   if (valueError) throw valueError;
   return createdValue.id;
+}
+
+/**
+ * Revalidación bajo demanda de TODAS las superficies públicas donde un
+ * producto puede aparecer (sección 24 del plan: "no esperar al intervalo
+ * de revalidación automática"). `revalidatePath("/catalogo")` solo no
+ * bastaba — la ficha de producto (`/producto/[slug]`) y el Home (que
+ * puede tener un slider de destacados/novedades) quedaban con datos
+ * viejos hasta que expirara su `revalidate` de 60s.
+ */
+export async function revalidateProductPublicPaths(
+  supabase: DB,
+  productId: string,
+): Promise<void> {
+  const { data: product } = await supabase
+    .from("products")
+    .select("slug")
+    .eq("id", productId)
+    .maybeSingle();
+  revalidatePath("/catalogo");
+  revalidatePath("/");
+  if (product) revalidatePath(`/producto/${product.slug}`);
 }
 
 export async function createVariantWithOptions(

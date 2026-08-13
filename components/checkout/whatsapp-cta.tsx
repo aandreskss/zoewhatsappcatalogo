@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { useAnalytics } from "@/components/analytics/analytics-provider";
 
 /**
  * Botón principal de WhatsApp + fallback SIEMPRE visible (sección 17/83
@@ -20,6 +21,7 @@ export function WhatsAppCta({
   phone: string;
 }) {
   const [copied, setCopied] = React.useState<"message" | "phone" | null>(null);
+  const track = useAnalytics();
 
   async function copy(text: string, which: "message" | "phone") {
     await navigator.clipboard.writeText(text);
@@ -30,7 +32,12 @@ export function WhatsAppCta({
   return (
     <div className="flex w-full flex-col gap-2">
       <Button asChild size="lg" className="w-full">
-        <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track("whatsapp_clicked")}
+        >
           Enviar pedido por WhatsApp
         </a>
       </Button>

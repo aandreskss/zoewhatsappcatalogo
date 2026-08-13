@@ -561,7 +561,22 @@ export interface Database {
           idempotency_key: string;
         };
         Update: Partial<Database["public"]["Tables"]["orders"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "orders_store_id_fkey";
+            columns: ["store_id"];
+            isOneToOne: false;
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       order_items: {
         Row: {
@@ -706,6 +721,200 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["redirects"]["Row"]>;
         Relationships: [];
       };
+      exchange_rate_fetch_logs: {
+        Row: {
+          id: string;
+          provider: string;
+          success: boolean;
+          http_status: number | null;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: Partial<
+          Database["public"]["Tables"]["exchange_rate_fetch_logs"]["Row"]
+        > & {
+          provider: string;
+          success: boolean;
+        };
+        Update: Partial<Database["public"]["Tables"]["exchange_rate_fetch_logs"]["Row"]>;
+        Relationships: [];
+      };
+      shipping_methods: {
+        Row: { id: string; name: string; active: boolean };
+        Insert: Partial<Database["public"]["Tables"]["shipping_methods"]["Row"]> & {
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["shipping_methods"]["Row"]>;
+        Relationships: [];
+      };
+      shipping_carriers: {
+        Row: { id: string; name: string; active: boolean; notes: string | null };
+        Insert: Partial<Database["public"]["Tables"]["shipping_carriers"]["Row"]> & {
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["shipping_carriers"]["Row"]>;
+        Relationships: [];
+      };
+      store_hours: {
+        Row: {
+          id: string;
+          store_id: string;
+          day_of_week: number;
+          opens_at: string | null;
+          closes_at: string | null;
+          closed: boolean;
+        };
+        Insert: Partial<Database["public"]["Tables"]["store_hours"]["Row"]> & {
+          store_id: string;
+          day_of_week: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["store_hours"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "store_hours_store_id_fkey";
+            columns: ["store_id"];
+            isOneToOne: false;
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      collections: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          description: string | null;
+          type: "manual" | "rule_based";
+          rule: Json | null;
+          seo_title: string | null;
+          seo_description: string | null;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["collections"]["Row"]> & {
+          name: string;
+          slug: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["collections"]["Row"]>;
+        Relationships: [];
+      };
+      collection_products: {
+        Row: { collection_id: string; product_id: string; order: number };
+        Insert: Partial<Database["public"]["Tables"]["collection_products"]["Row"]> & {
+          collection_id: string;
+          product_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["collection_products"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "collection_products_collection_id_fkey";
+            columns: ["collection_id"];
+            isOneToOne: false;
+            referencedRelation: "collections";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "collection_products_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      banners: {
+        Row: {
+          id: string;
+          name: string;
+          image_desktop_url: string | null;
+          image_mobile_url: string | null;
+          headline: string | null;
+          copy: string | null;
+          cta_label: string | null;
+          cta_url: string | null;
+          position: string;
+          starts_at: string | null;
+          ends_at: string | null;
+          priority: number;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["banners"]["Row"]> & {
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["banners"]["Row"]>;
+        Relationships: [];
+      };
+      home_sections: {
+        Row: {
+          id: string;
+          type:
+            | "hero"
+            | "banner"
+            | "categories"
+            | "product_slider"
+            | "collection"
+            | "image_text"
+            | "cta"
+            | "brands"
+            | "features"
+            | "testimonials"
+            | "instagram"
+            | "stores";
+          title: string | null;
+          subtitle: string | null;
+          config: Json;
+          order: number;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["home_sections"]["Row"]> & {
+          type: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["home_sections"]["Row"]>;
+        Relationships: [];
+      };
+      integrations: {
+        Row: {
+          id: string;
+          provider:
+            | "ga4"
+            | "gtm"
+            | "meta_pixel"
+            | "meta_capi"
+            | "tiktok"
+            | "google_ads"
+            | "bcv_rate_provider";
+          public_config: Json;
+          secret_ref: string | null;
+          active: boolean;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["integrations"]["Row"]> & {
+          provider: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["integrations"]["Row"]>;
+        Relationships: [];
+      };
+      size_charts: {
+        Row: {
+          id: string;
+          name: string;
+          category_id: string | null;
+          brand_id: string | null;
+          gender: string | null;
+          rows: Json;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["size_charts"]["Row"]> & {
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["size_charts"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       variant_availability: {
@@ -739,6 +948,14 @@ export interface Database {
           public_access_token: string;
           is_replay: boolean;
         }[];
+      };
+      search_products: {
+        Args: { p_query: string; p_limit?: number };
+        Returns: { product_id: string; rank: number }[];
+      };
+      suggest_products: {
+        Args: { p_query: string; p_limit?: number };
+        Returns: { product_id: string; rank: number }[];
       };
     };
   };

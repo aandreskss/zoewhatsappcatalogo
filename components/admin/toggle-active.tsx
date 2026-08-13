@@ -6,10 +6,14 @@ export function ToggleActive({
   id,
   active,
   action,
+  labelOn = "Activa",
+  labelOff = "Inactiva",
 }: {
   id: string;
   active: boolean;
   action: (id: string, active: boolean) => Promise<void>;
+  labelOn?: string;
+  labelOff?: string;
 }) {
   const [isPending, startTransition] = React.useTransition();
 
@@ -26,7 +30,7 @@ export function ToggleActive({
           });
         }}
       />
-      {active ? "Activa" : "Inactiva"}
+      {active ? labelOn : labelOff}
     </label>
   );
 }

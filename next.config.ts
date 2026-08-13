@@ -13,6 +13,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
+    // AVIF primero, WebP como fallback (sección 24 del plan) — Next.js ya
+    // lo hace por defecto, se deja explícito para que quede documentado
+    // como decisión y no como comportamiento implícito del framework.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",

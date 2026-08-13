@@ -15,6 +15,16 @@ const NAV_ITEMS = [
   { href: "/admin/productos", label: "Productos" },
   { href: "/admin/categorias", label: "Categorías" },
   { href: "/admin/marcas", label: "Marcas" },
+  { href: "/admin/finanzas/monedas", label: "Monedas" },
+  { href: "/admin/finanzas/metodos-pago", label: "Métodos de pago" },
+  { href: "/admin/entrega/pickup", label: "Retiro/Delivery" },
+  { href: "/admin/entrega/delivery", label: "Zonas de delivery" },
+  { href: "/admin/entrega/envios", label: "Envíos" },
+  { href: "/admin/entrega/horarios", label: "Horarios" },
+  { href: "/admin/marketing/home", label: "Home" },
+  { href: "/admin/marketing/banners", label: "Banners" },
+  { href: "/admin/integraciones/analytics", label: "Analítica" },
+  { href: "/admin/reportes", label: "Reportes" },
 ];
 
 export function AdminShell({

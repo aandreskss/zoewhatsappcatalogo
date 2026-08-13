@@ -14,6 +14,7 @@ import {
   buildOrderWhatsAppMessage,
   buildWhatsAppLink,
 } from "@/lib/domain/whatsapp";
+import { trackEvent } from "@/lib/domain/analytics";
 
 type DB = SupabaseClient<Database>;
 
@@ -187,7 +188,7 @@ async function findOrCreateCustomer(
 
 export async function createOrder(
   supabase: DB,
-  params: { cartId: string; input: CreateOrderInput },
+  params: { cartId: string; input: CreateOrderInput; sessionId?: string },
 ): Promise<CreateOrderResult> {
   const lines = await loadCartLines(supabase, params.cartId);
   if (lines.length === 0) {
@@ -348,6 +349,28 @@ export async function createOrder(
         whatsapp_message_sent: whatsappMessage,
       })
       .eq("id", order.id);
+
+    // checkout_completed solo se registra la primera vez que se crea el
+    // pedido (nunca en un replay por idempotencia). Se usa el propio
+    // order.id como clientEventId: es un uuid estable por pedido, así que
+    // duplica la protección de idempotencia aunque este bloque se
+    // ejecutara dos veces por algún motivo.
+    if (params.sessionId) {
+      await trackEvent({
+        eventType: "checkout_completed",
+        clientEventId: order.id,
+        sessionId: params.sessionId,
+        customerId,
+        entityType: "order",
+        entityId: order.id,
+        metadata: {
+          orderNumber: order.order_number,
+          totalUsd,
+          itemCount: lines.reduce((sum, l) => sum + l.quantity, 0),
+          deliveryMethod: params.input.delivery.method,
+        },
+      });
+    }
   }
 
   return {

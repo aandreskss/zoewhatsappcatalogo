@@ -6,6 +6,7 @@ import type { ProductDetail } from "@/lib/domain/catalog-types";
 import { describeAvailability } from "@/lib/domain/inventory-shared";
 import { formatDualPrice } from "@/lib/domain/pricing";
 import { useCart } from "@/components/cart/cart-context";
+import { useAnalytics } from "@/components/analytics/analytics-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ export function ProductVariantPicker({
 }) {
   const router = useRouter();
   const { addItem } = useCart();
+  const track = useAnalytics();
   const [selected, setSelected] = React.useState<Record<string, string>>({});
   const [feedback, setFeedback] = React.useState<string | null>(null);
   const [isAdding, setIsAdding] = React.useState(false);
@@ -53,7 +55,14 @@ export function ProductVariantPicker({
     setFeedback(
       result.ok ? "Agregado al carrito." : (result.error ?? "No se pudo agregar."),
     );
-    if (result.ok) router.refresh();
+    if (result.ok) {
+      track("add_to_cart", {
+        entityType: "product_variant",
+        entityId: matchedVariant.id,
+        metadata: { productId: product.id, productName: product.name },
+      });
+      router.refresh();
+    }
   }
 
   return (

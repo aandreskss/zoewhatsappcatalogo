@@ -51,14 +51,76 @@ export async function getActiveExchangeRate(
 export async function getVesReferenceRate(
   supabase: DB,
 ): Promise<ActiveExchangeRate | null> {
+  const reference = await getVesReferenceCurrency(supabase);
+  const pair = reference === "EUR" ? "EUR/VES" : "USD/VES";
+  return getActiveExchangeRate(supabase, pair);
+}
+
+export async function getVesReferenceCurrency(supabase: DB): Promise<"USD" | "EUR"> {
   const { data: settingRow } = await supabase
     .from("company_settings")
     .select("value")
     .eq("key", "ves_reference_currency")
     .maybeSingle();
 
-  const reference = (settingRow?.value as string | undefined) ?? "USD";
-  const pair = reference === "EUR" ? "EUR/VES" : "USD/VES";
+  return (settingRow?.value as string | undefined) === "EUR" ? "EUR" : "USD";
+}
 
-  return getActiveExchangeRate(supabase, pair);
+/** Antigüedad (en horas) a partir de la cual una tasa se considera vencida y el admin debe confirmarla o actualizarla a mano (sección 15, "resiliencia"). */
+export const STALE_RATE_HOURS = 48;
+
+export interface RateWithStaleness extends ActiveExchangeRate {
+  isStale: boolean;
+  hoursSinceFetch: number;
+}
+
+/**
+ * Usado por el panel admin (`/admin/finanzas/monedas`) para mostrar el
+ * estado de ambos pares a la vez, con antigüedad visible — nunca se
+ * bloquea el catálogo por una tasa vencida, pero el admin sí debe verlo
+ * de inmediato al entrar al dashboard.
+ */
+export async function getAllCurrentRates(
+  supabase: DB,
+): Promise<Record<"USD/VES" | "EUR/VES", RateWithStaleness | null>> {
+  const [usd, eur] = await Promise.all([
+    getActiveExchangeRate(supabase, "USD/VES"),
+    getActiveExchangeRate(supabase, "EUR/VES"),
+  ]);
+
+  function withStaleness(rate: ActiveExchangeRate | null): RateWithStaleness | null {
+    if (!rate) return null;
+    const hoursSinceFetch =
+      (Date.now() - new Date(rate.fetchedAt).getTime()) / (1000 * 60 * 60);
+    return { ...rate, hoursSinceFetch, isStale: hoursSinceFetch > STALE_RATE_HOURS };
+  }
+
+  return { "USD/VES": withStaleness(usd), "EUR/VES": withStaleness(eur) };
+}
+
+export interface ExchangeRateFetchLogEntry {
+  id: string;
+  provider: string;
+  success: boolean;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export async function getRecentFetchLogs(
+  supabase: DB,
+  limit = 10,
+): Promise<ExchangeRateFetchLogEntry[]> {
+  const { data } = await supabase
+    .from("exchange_rate_fetch_logs")
+    .select("id, provider, success, error_message, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    provider: row.provider,
+    success: row.success,
+    errorMessage: row.error_message,
+    createdAt: row.created_at,
+  }));
 }
