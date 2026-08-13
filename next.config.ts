@@ -19,6 +19,12 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        // Solo para desarrollo con datos de `seed.sql` (imágenes de
+        // ejemplo). Quitar antes de producción si no se usa.
+        protocol: "https",
+        hostname: "placehold.co",
+      },
     ],
   },
   async headers() {

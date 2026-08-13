@@ -1,14 +1,22 @@
+import Link from "next/link";
 import type { AdminSessionUser } from "@/lib/auth/session";
 import { signOut } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 
 /**
- * Shell mínimo del dashboard (sección 19/91 del plan). La navegación
- * completa por secciones (Catálogo, Inventario, Marketing, Finanzas…) se
- * construye a partir de la Fase 2 en adelante, a medida que cada módulo
- * exista de verdad — no tiene sentido enlazar a pantallas que todavía no
- * están construidas.
+ * Navegación por secciones (sección 19/91 del plan). Se enlaza únicamente
+ * a lo que ya existe como pantalla real hasta la Fase 5 — el resto de
+ * módulos (Marketing, Finanzas, Configuración) se agrega cuando su
+ * implementación exista, para no enlazar a rutas 404.
  */
+const NAV_ITEMS = [
+  { href: "/admin", label: "Inicio" },
+  { href: "/admin/pedidos", label: "Pedidos" },
+  { href: "/admin/productos", label: "Productos" },
+  { href: "/admin/categorias", label: "Categorías" },
+  { href: "/admin/marcas", label: "Marcas" },
+];
+
 export function AdminShell({
   user,
   children,
@@ -31,6 +39,17 @@ export function AdminShell({
           </Button>
         </form>
       </header>
+      <nav className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] bg-[var(--color-background)] px-6 py-2">
+        {NAV_ITEMS.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="rounded-[var(--radius-md)] px-3 py-1.5 text-sm whitespace-nowrap hover:bg-[var(--color-muted)]"
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
       <main className="flex-1 p-6">{children}</main>
     </div>
   );

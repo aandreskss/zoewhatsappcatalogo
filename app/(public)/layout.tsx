@@ -1,11 +1,19 @@
+import { CartProvider } from "@/components/cart/cart-context";
+import { SiteHeader } from "@/components/layout/site-header";
+
 /**
  * Layout del grupo de rutas públicas (sección 5/31 del plan).
  *
- * A partir de la Fase 1 (design system) y la Fase 2 (catálogo) aquí vive el
- * Header sticky, el buscador, el menú mobile y el Footer compartidos por
- * todo el sitio público. En la Fase 0 se deja como paso a través para no
- * construir UI antes de tener el design system.
+ * El Header completo (buscador, categorías, WhatsApp flotante) y el
+ * Footer llegan en la Fase 7 sobre el design system. Por ahora se monta
+ * el `CartProvider` (todo el sitio público necesita saber el conteo del
+ * carrito) y un header mínimo funcional.
  */
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <CartProvider>
+      <SiteHeader />
+      {children}
+    </CartProvider>
+  );
 }
