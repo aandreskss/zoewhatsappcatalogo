@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/*
+ * Tokens del design system (sección 28 del plan).
+ *
+ * Estos son valores PLACEHOLDER neutrales para la Fase 0/1. El branding
+ * real de Zoe (logo, paleta, tipografía) se carga desde
+ * `Apariencia → Branding` en el admin (Fase 7) y sobrescribe estas
+ * variables en runtime — ningún componente debe asumir estos valores
+ * como si fueran "la marca Zoe" (regla: no hardcodear Zoe en código
+ * genérico).
+ */
+@theme {
+  --color-primary: oklch(0.32 0.09 280);
+  --color-primary-foreground: oklch(0.98 0 0);
+  --color-secondary: oklch(0.7 0.14 30);
+  --color-secondary-foreground: oklch(0.15 0 0);
+  --color-accent: oklch(0.75 0.16 90);
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.15 0 0);
+  --color-muted: oklch(0.96 0 0);
+  --color-muted-foreground: oklch(0.45 0 0);
+  --color-border: oklch(0.9 0 0);
+  --color-success: oklch(0.6 0.15 145);
+  --color-warning: oklch(0.75 0.15 80);
+  --color-error: oklch(0.55 0.2 25);
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  /* Respeta a quienes prefieren menos movimiento (sección 28/119 del plan). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
