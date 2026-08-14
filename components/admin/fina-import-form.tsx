@@ -98,7 +98,7 @@ export function FinaImportForm({ stores }: Props) {
               <p className="mt-0.5 text-xs text-[#29252A]/50">
                 {m === "single"
                   ? "Todo el inventario va a una tienda"
-                  : "El CSV incluye la columna "tienda""}
+                  : "El CSV incluye la columna «tienda»"}
               </p>
             </button>
           ))}
