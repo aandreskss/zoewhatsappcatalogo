@@ -27,6 +27,7 @@ export function BannerCarousel({ banners }: { banners: BannerView[] }) {
   if (banners.length === 0) return null;
 
   const banner = banners[current];
+  if (!banner) return null;
 
   return (
     <section className="relative overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-muted)]">
