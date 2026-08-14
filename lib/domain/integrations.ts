@@ -11,7 +11,8 @@ export type IntegrationProvider =
   | "meta_capi"
   | "tiktok"
   | "google_ads"
-  | "bcv_rate_provider";
+  | "bcv_rate_provider"
+  | "google_search_console";
 
 export interface PublicIntegrationConfig {
   provider: IntegrationProvider;
