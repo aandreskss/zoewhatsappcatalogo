@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseThemeTokens, contrastForeground } from "@/lib/domain/theme";
+import { parseThemeTokens, contrastForeground } from "@/lib/domain/theme-shared";
 
 describe("parseThemeTokens", () => {
   const valid = {

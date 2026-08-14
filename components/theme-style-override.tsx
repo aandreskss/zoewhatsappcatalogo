@@ -2,7 +2,7 @@ import {
   RADIUS_PRESETS,
   contrastForeground,
   type SafeThemeTokens,
-} from "@/lib/domain/theme";
+} from "@/lib/domain/theme-shared";
 
 /**
  * Inyecta el theme activo como overrides de `:root` (sección 28 del plan).

@@ -6,7 +6,7 @@ import {
   saveTheme,
   type FormState,
 } from "@/app/admin/(protected)/apariencia/branding/actions";
-import { RADIUS_PRESETS, type SafeThemeTokens } from "@/lib/domain/theme";
+import { RADIUS_PRESETS, type SafeThemeTokens } from "@/lib/domain/theme-shared";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
