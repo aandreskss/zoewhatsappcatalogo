@@ -22,8 +22,8 @@ export interface CronJobHealth {
  * cuando el atraso ya es sospechoso.
  */
 const EXPECTED_JOBS: { jobName: string; expectedMinutes: number }[] = [
-  { jobName: "release-reservations", expectedMinutes: 5 },
-  { jobName: "refresh-exchange-rates", expectedMinutes: 120 },
+  { jobName: "release-reservations", expectedMinutes: 24 * 60 },
+  { jobName: "refresh-exchange-rates", expectedMinutes: 24 * 60 },
 ];
 
 const STALE_FACTOR = 3;

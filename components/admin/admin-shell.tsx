@@ -26,6 +26,7 @@ import {
   Type,
   Shield,
   Activity,
+  ArrowLeftRight,
   LogOut,
   Menu,
   X,
@@ -91,6 +92,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Sistema",
     items: [
       { href: "/admin/integraciones/analytics", label: "Analítica", icon: BarChart2 },
+      { href: "/admin/integraciones/fina", label: "Fina Partner", icon: ArrowLeftRight },
       { href: "/admin/reportes", label: "Reportes", icon: FileText },
       { href: "/admin/apariencia/branding", label: "Branding", icon: Palette },
       { href: "/admin/apariencia/contenido", label: "Contenido del sitio", icon: Type },
