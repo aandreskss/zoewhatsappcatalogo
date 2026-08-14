@@ -148,16 +148,16 @@ export async function POST(request: Request) {
       continue;
     }
 
-    let storeId = singleStoreId ?? "";
+    let storeId: string = singleStoreId ?? "";
     if (mode === "multi") {
-      const storeCode = cols[storeIdx]?.trim().toUpperCase();
-      storeId = storeCodeMap[storeCode ?? ""] ?? "";
+      const storeCode = (cols[storeIdx] ?? "").trim().toUpperCase();
+      storeId = storeCodeMap[storeCode] ?? "";
       if (!storeId) {
         results.push({
           sku,
-          store: storeCode,
+          store: (cols[storeIdx] ?? "").trim(),
           status: "skipped",
-          message: `Código de tienda "${storeCode}" no encontrado`,
+          message: `Código de tienda no encontrado`,
         });
         continue;
       }
@@ -212,17 +212,16 @@ export async function POST(request: Request) {
       }
 
       // Optional: update cost / price
-      const updates: Record<string, number> = {};
-      if (costoIdx !== -1) {
-        const v = parseFloat(cols[costoIdx] ?? "");
-        if (!isNaN(v) && v >= 0) updates.cost_usd = v;
-      }
-      if (ventaIdx !== -1) {
-        const v = parseFloat(cols[ventaIdx] ?? "");
-        if (!isNaN(v) && v > 0) updates.price_usd = v;
-      }
-      if (Object.keys(updates).length > 0) {
-        await service.from("product_variants").update(updates).eq("id", variant.id);
+      const costUpdate = costoIdx !== -1 ? parseFloat(cols[costoIdx] ?? "") : NaN;
+      const priceUpdate = ventaIdx !== -1 ? parseFloat(cols[ventaIdx] ?? "") : NaN;
+      const hasCost = !isNaN(costUpdate) && costUpdate >= 0;
+      const hasPrice = !isNaN(priceUpdate) && priceUpdate > 0;
+      if (hasCost && hasPrice) {
+        await service.from("product_variants").update({ cost_usd: costUpdate, price_usd: priceUpdate }).eq("id", variant.id);
+      } else if (hasCost) {
+        await service.from("product_variants").update({ cost_usd: costUpdate }).eq("id", variant.id);
+      } else if (hasPrice) {
+        await service.from("product_variants").update({ price_usd: priceUpdate }).eq("id", variant.id);
       }
 
       results.push({ sku, status: "updated", previousQuantity: previousQty, newQuantity: cantidad });

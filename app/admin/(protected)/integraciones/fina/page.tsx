@@ -9,7 +9,7 @@ export default async function FinaIntegrationPage() {
   const { data: stores } = await supabase
     .from("stores")
     .select("id, name, code")
-    .eq("is_active", true)
+    .eq("active", true)
     .order("name");
 
   return (
