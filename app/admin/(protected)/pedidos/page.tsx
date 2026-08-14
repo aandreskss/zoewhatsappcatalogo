@@ -61,7 +61,7 @@ export default async function AdminOrdersPage({
           <h1 className="text-xl font-bold text-[#29252A]">Pedidos</h1>
           <p className="mt-0.5 text-sm text-[#29252A]/50">
             {(orders ?? []).length} resultado{(orders ?? []).length !== 1 ? "s" : ""}
-            {estado ? ` · ${ORDER_STATUS_LABELS[estado] ?? estado}` : ""}
+            {estado ? ` · ${ORDER_STATUS_LABELS[estado as keyof typeof ORDER_STATUS_LABELS] ?? estado}` : ""}
             {q ? ` · "${q}"` : ""}
           </p>
         </div>

@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "El CSV está vacío o solo tiene encabezados" }, { status: 400 });
   }
 
-  const rawHeaders = parseCsvLine(lines[0]);
+  const rawHeaders = parseCsvLine(lines[0]!);
   const headers = rawHeaders.map(normalizeHeader);
 
   const skuIdx = findCol(headers, ["sku", "codigo", "code"]);
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
   const results: ImportRowResult[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const cols = parseCsvLine(lines[i]);
+    const cols = parseCsvLine(lines[i]!);
     const sku = cols[skuIdx]?.trim();
     if (!sku) continue;
 
