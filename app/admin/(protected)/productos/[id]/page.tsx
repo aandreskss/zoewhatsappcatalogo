@@ -5,6 +5,8 @@ import { StatusSelect } from "@/components/admin/status-select";
 import { AddVariantForm } from "@/components/admin/add-variant-form";
 import { AddImageForm } from "@/components/admin/add-image-form";
 import { InventoryCell } from "@/components/admin/inventory-cell";
+import { DeleteProductButton } from "@/components/admin/delete-product-button";
+import { DeleteImageButton } from "@/components/admin/delete-image-button";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +78,10 @@ export default async function EditProductPage({
             /producto/{product.slug}
           </p>
         </div>
-        <StatusSelect productId={product.id} status={product.status} />
+        <div className="flex items-center gap-3">
+          <DeleteProductButton productId={product.id} productName={product.name} />
+          <StatusSelect productId={product.id} status={product.status} />
+        </div>
       </div>
 
       <section className="flex flex-col gap-3">
@@ -85,9 +90,10 @@ export default async function EditProductPage({
           {(images ?? []).map((image) => (
             <div
               key={image.id}
-              className="relative size-24 overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-muted)]"
+              className="group relative size-24 overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-muted)]"
             >
               <Image src={image.url} alt={image.alt_text} fill className="object-cover" />
+              <DeleteImageButton imageId={image.id} productId={product.id} />
             </div>
           ))}
         </div>

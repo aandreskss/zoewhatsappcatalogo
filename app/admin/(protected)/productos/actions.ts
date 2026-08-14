@@ -201,6 +201,55 @@ export async function addImageAction(
   return { error: null };
 }
 
+export async function deleteImageAction(
+  imageId: string,
+  productId: string,
+): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+
+  // Si era la imagen principal, promover la siguiente
+  const { data: img } = await supabase
+    .from("product_images")
+    .select("is_primary")
+    .eq("id", imageId)
+    .maybeSingle();
+
+  const { error } = await supabase.from("product_images").delete().eq("id", imageId);
+  if (error) throw error;
+
+  if (img?.is_primary) {
+    const { data: next } = await supabase
+      .from("product_images")
+      .select("id")
+      .eq("product_id", productId)
+      .order("order")
+      .limit(1)
+      .maybeSingle();
+    if (next) {
+      await supabase
+        .from("product_images")
+        .update({ is_primary: true })
+        .eq("id", next.id);
+    }
+  }
+
+  revalidatePath(`/admin/productos/${productId}`);
+  await revalidateProductPublicPaths(supabase, productId);
+}
+
+export async function deleteProduct(productId: string): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("products")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", productId);
+  if (error) throw error;
+  revalidatePath("/admin/productos");
+  redirect("/admin/productos");
+}
+
 export async function setInventoryAction(
   variantId: string,
   storeId: string,

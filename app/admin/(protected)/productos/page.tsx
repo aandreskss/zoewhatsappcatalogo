@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Search, Package, Plus } from "lucide-react";
+import { DeleteProductButton } from "@/components/admin/delete-product-button";
 
 export const dynamic = "force-dynamic";
 
@@ -155,12 +156,15 @@ export default async function AdminProductsPage({
                     })}
                   </td>
                   <td className="px-4 py-3.5 text-right">
-                    <Link
-                      href={`/admin/productos/${product.id}`}
-                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[#C9748A] transition-colors hover:bg-[#C9748A]/10"
-                    >
-                      Editar →
-                    </Link>
+                    <div className="flex items-center justify-end gap-1">
+                      <DeleteProductButton productId={product.id} productName={product.name} variant="icon" />
+                      <Link
+                        href={`/admin/productos/${product.id}`}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[#C9748A] transition-colors hover:bg-[#C9748A]/10"
+                      >
+                        Editar →
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               );

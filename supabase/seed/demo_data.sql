@@ -31,8 +31,13 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Stores (creadas por seed.sql principal)
+  -- Stores: crear una tienda demo si la tabla está vacía
   SELECT id INTO store_a FROM stores ORDER BY created_at LIMIT 1;
+  IF store_a IS NULL THEN
+    store_a := gen_random_uuid();
+    INSERT INTO stores(id,name,slug,code,address,active)
+      VALUES(store_a,'Tienda Principal','tienda-principal','MAIN','Caracas, Venezuela',true);
+  END IF;
   SELECT id INTO store_b FROM stores ORDER BY created_at OFFSET 1 LIMIT 1;
   IF store_b IS NULL THEN store_b := store_a; END IF;
 
@@ -95,7 +100,7 @@ BEGIN
 
   -- ── P01: Tenis Clásico Blanco ────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Tenis Clásico Blanco','tenis-clasico-blanco',brand_zoe,cat_tenis,'mujer',
     'El clásico infalible. Comodidad y estilo en blanco puro para cualquier look.',
     'Diseñado para la mujer activa que no sacrifica estilo. La suela antideslizante y el forro interior acolchado hacen de este tenis tu compañero ideal del día a día. Combina con cualquier outfit.',
@@ -122,7 +127,7 @@ BEGIN
 
   -- ── P02: Sneaker Urban Rosa ───────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Sneaker Urban Rosa','sneaker-urban-rosa',brand_urban,cat_tenis,'mujer',
     'Estilo urbano en rosa. El sneaker que convierte cada calle en pasarela.',
     'La Urban Rosa es el statement piece que toda fashionista necesita. Su suela chunky ligera y el tejido transpirable la hacen perfecta para largas jornadas sin sacrificar comodidad.',
@@ -149,7 +154,7 @@ BEGIN
 
   -- ── P03: Tenis Chunky Beige ───────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Tenis Chunky Beige','tenis-chunky-beige',brand_urban,cat_tenis,'mujer',
     'La tendencia chunky que arrasa. Plataforma pronunciada y estilo 90s en tono beige neutro.',
     'Los chunky sneakers que dominan las tendencias mundiales ahora en un color beige que combina con todo tu guardarropa. La plataforma gruesa añade altura y actitud a cada look.',
@@ -176,7 +181,7 @@ BEGIN
 
   -- ── P04: Botín Chelsea Negro ──────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Botín Chelsea Negro','botin-chelsea-negro',brand_zoe,cat_botas,'mujer',
     'El botín Chelsea que nunca pasa de moda. Cuero genuino, elásticos laterales y puntera redondeada.',
     'Un clásico del calzado femenino reinventado por Zoe Collection. Los elásticos laterales facilitan la colocación y el cuero de alta calidad garantiza durabilidad sin sacrificar elegancia. Perfecto para el trabajo y el día a día.',
@@ -203,7 +208,7 @@ BEGIN
 
   -- ── P05: Botín Vaquero Café ───────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Botín Vaquero Café','botin-vaquero-cafe',brand_zoe,cat_botas,'mujer',
     'Western vibes en calzado femenino. Botín de inspiración vaquera con detalle bordado.',
     'La fusión perfecta entre el estilo vaquero y la elegancia femenina. Las costuras decorativas y la puntera afilada le dan carácter a cualquier outfit. Cuero genuino con forro suave al tacto.',
@@ -230,7 +235,7 @@ BEGIN
 
   -- ── P06: Tacón Fino Nude ──────────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Tacón Fino Nude','tacon-fino-nude',brand_zoe,cat_tacones,'mujer',
     'La elegancia definitiva. Tacón de aguja en nude que estiliza y alarga la pierna.',
     'Diseñado para la mujer que quiere causar impresión. El color nude se funde con el tono de piel creando la ilusión de piernas interminables. Tacón de 8cm con plataforma interior de 1cm para mayor comodidad.',
@@ -257,7 +262,7 @@ BEGIN
 
   -- ── P07: Tacón Block Rojo ─────────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Tacón Block Rojo','tacon-block-rojo',brand_zoe,cat_tacones,'mujer',
     'El tacón block que combina comodidad con actitud. Rojo apasionado para las que se atreven.',
     'El tacón block es la versión cómoda del tacón de aguja: misma altura, mucho más estabilidad. En rojo intenso para las mujeres que no pasan desapercibidas. Perfecto para salidas nocturnas y eventos especiales.',
@@ -284,7 +289,7 @@ BEGIN
 
   -- ── P08: Sandalia Trenzada Camel ──────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Sandalia Trenzada Camel','sandalia-trenzada-camel',brand_zoe,cat_sandalias,'mujer',
     'La sandalia boho-chic de la temporada. Tiras trenzadas en cuero camel para un look natural.',
     'Inspirada en las tendencias mediterráneas, la Sandalia Trenzada Camel es el complemento perfecto para looks de playa, tarde de compras o cenas al aire libre. Las tiras trenzadas artesanalmente garantizan un ajuste perfecto y un estilo único.',
@@ -311,7 +316,7 @@ BEGIN
 
   -- ── P09: Sandalia con Plataforma Blanca ───────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Sandalia Plataforma Blanca','sandalia-plataforma-blanca',brand_urban,cat_sandalias,'mujer',
     'Altura sin esfuerzo. Plataforma de 5cm que eleva tu look con máxima comodidad.',
     'La sandalia de plataforma es el calzado definitivo del verano: añade altura sin la incomodidad del tacón de aguja. La correa al tobillo asegura el pie y la suela de plataforma amortigua cada paso.',
@@ -338,7 +343,7 @@ BEGIN
 
   -- ── P10: Baleta Negra Básica ──────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Baleta Negra Básica','baleta-negra-basica',brand_zoe,cat_baletas,'mujer',
     'La básica imprescindible. Baleta negra que va con absolutamente todo en tu guardarropa.',
     'Toda mujer necesita una baleta negra perfecta. Esta es la de Zoe: forro interior en gamuza para máxima comodidad, suela antideslizante y cuero suave que se adapta al pie desde el primer uso. Un básico que nunca pasa de moda.',
@@ -369,7 +374,7 @@ BEGIN
 
   -- ── P11: Morral Urbano Negro ──────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Morral Urbano Negro','morral-urbano-negro',brand_urban,cat_morrales,'mujer',
     'El morral que lo carga todo con estilo. Compartimentos inteligentes para la mujer activa.',
     'Diseñado para la mujer en movimiento: compartimento para laptop 15", bolsillo frontal organizador, correas acolchadas ajustables y material resistente al agua. Todo lo que necesitas, siempre a la mano.',
@@ -390,7 +395,7 @@ BEGIN
 
   -- ── P12: Cartera Mini Rosa ────────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Cartera Mini Rosa','cartera-mini-rosa',brand_zoe,cat_morrales,'mujer',
     'Pequeña pero poderosa. La cartera mini que cabe en cualquier occasion y hace juego con todo.',
     'La Cartera Mini Rosa es el accesorio it de la temporada. Su cadena dorada ajustable permite usarla como crossbody o clutch. Interior forrado con bolsillo para tarjetas y compartimento principal con cierre magnético.',
@@ -411,7 +416,7 @@ BEGIN
 
   -- ── P13: Tote Bag Camel ───────────────────────────────────────────────────
   prod:=gen_random_uuid();
-  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,is_new,is_featured,is_bestseller,seo_title,seo_description)
+  INSERT INTO products(id,name,slug,brand_id,category_id,gender,description_short,description,material,tags,status,"is_new",is_featured,is_bestseller,seo_title,seo_description)
   VALUES(prod,'Tote Bag Camel','tote-bag-camel',brand_zoe,cat_morrales,'mujer',
     'El tote bag que lo carga todo. Spacioso, resistente y con el camel neutro que combina con todo.',
     'Un tote bag generoso que se adapta a tu ritmo de vida: mercado, trabajo, playa o universidad. Las asas reforzadas soportan hasta 10kg y el bolsillo interior con cierre mantiene tus objetos de valor seguros.',
@@ -437,19 +442,25 @@ BEGIN
   VALUES
     (gen_random_uuid(),'Nueva Colección 2026',
       'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=80',
-      'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80',
+      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80',
       'Nueva Colección 2026',
       'Los estilos que definen la temporada. Zapatos, morrales y carteras con envío a todo Venezuela.',
       'Ver colección','catalogo','home',100,true),
+    (gen_random_uuid(),'Colección Especial',
+      'https://images.unsplash.com/photo-1515955656352-a1fa3ffcd111?w=1600&q=80',
+      'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80',
+      'Colección Especial',
+      'Camina a tu manera.',
+      'Descubrir','catalogo','home',90,true),
     (gen_random_uuid(),'Oferta Temporada — Hasta 40% Off',
       'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&q=80',
-      'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80',
+      'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800&q=80',
       'Hasta 40% de descuento',
       'Aprovecha los mejores precios en tenis, sandalias, botas y accesorios.',
       'Ver ofertas','catalogo','home',80,false),
     (gen_random_uuid(),'Morrales y Carteras',
       'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=1600&q=80',
-      'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&q=80',
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&q=80',
       'Morrales & Carteras',
       'Accesorios que completan cualquier look. Cuero genuino y sintético en los colores de temporada.',
       'Ver accesorios','categoria/morrales-y-carteras','home',60,false);
