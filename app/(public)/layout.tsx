@@ -15,16 +15,19 @@ import { SiteFooter } from "@/components/layout/site-footer";
  * carrito") envuelven todo el árbol público.
  */
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createSupabaseServerClient();
-  const [integrations, { data: categories }] = await Promise.all([
-    getActivePublicIntegrations(supabase),
-    supabase
-      .from("categories")
-      .select("name, slug")
-      .eq("active", true)
-      .order("order")
-      .limit(8),
-  ]);
+  let integrations: Awaited<ReturnType<typeof getActivePublicIntegrations>> = [];
+  let categories: { name: string; slug: string }[] = [];
+  try {
+    const supabase = await createSupabaseServerClient();
+    const [integrationsResult, categoriesResult] = await Promise.all([
+      getActivePublicIntegrations(supabase),
+      supabase.from("categories").select("name, slug").eq("active", true).order("order").limit(8),
+    ]);
+    integrations = integrationsResult;
+    categories = categoriesResult.data ?? [];
+  } catch {
+    // Sin Supabase configurado (build sin vars), header se renderiza vacío
+  }
 
   return (
     <CartProvider>

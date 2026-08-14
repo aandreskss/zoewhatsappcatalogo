@@ -14,27 +14,7 @@ function siteUrl(): string {
  * solo evita depender de que la cookie de sesión exista en este contexto.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = createSupabaseServiceRoleClient();
   const base = siteUrl();
-
-  const [
-    { data: products },
-    { data: categories },
-    { data: brands },
-    { data: collections },
-    { data: stores },
-  ] = await Promise.all([
-    supabase
-      .from("products")
-      .select("slug, updated_at")
-      .eq("status", "published")
-      .is("deleted_at", null)
-      .limit(5000),
-    supabase.from("categories").select("slug").eq("active", true).limit(500),
-    supabase.from("brands").select("slug").eq("active", true).limit(500),
-    supabase.from("collections").select("slug, updated_at").eq("active", true).limit(500),
-    supabase.from("stores").select("slug").eq("active", true).limit(100),
-  ]);
 
   const entries: MetadataRoute.Sitemap = [
     { url: `${base}/`, changeFrequency: "daily", priority: 1 },
@@ -42,7 +22,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/tiendas`, changeFrequency: "monthly", priority: 0.5 },
   ];
 
-  for (const product of products ?? []) {
+  let products: { slug: string; updated_at: string | null }[] = [];
+  let categories: { slug: string }[] = [];
+  let brands: { slug: string }[] = [];
+  let collections: { slug: string; updated_at: string | null }[] = [];
+  let stores: { slug: string }[] = [];
+
+  try {
+    const supabase = createSupabaseServiceRoleClient();
+    const [p, c, b, col, s] = await Promise.all([
+      supabase.from("products").select("slug, updated_at").eq("status", "published").is("deleted_at", null).limit(5000),
+      supabase.from("categories").select("slug").eq("active", true).limit(500),
+      supabase.from("brands").select("slug").eq("active", true).limit(500),
+      supabase.from("collections").select("slug, updated_at").eq("active", true).limit(500),
+      supabase.from("stores").select("slug").eq("active", true).limit(100),
+    ]);
+    products = p.data ?? [];
+    categories = c.data ?? [];
+    brands = b.data ?? [];
+    collections = col.data ?? [];
+    stores = s.data ?? [];
+  } catch {
+    // Sin Supabase configurado, devuelve solo las rutas estáticas
+    return entries;
+  }
+
+  for (const product of products) {
     entries.push({
       url: `${base}/producto/${product.slug}`,
       lastModified: product.updated_at ? new Date(product.updated_at) : undefined,
@@ -50,21 +55,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     });
   }
-  for (const category of categories ?? []) {
+  for (const category of categories) {
     entries.push({
       url: `${base}/categoria/${category.slug}`,
       changeFrequency: "daily",
       priority: 0.7,
     });
   }
-  for (const brand of brands ?? []) {
+  for (const brand of brands) {
     entries.push({
       url: `${base}/marca/${brand.slug}`,
       changeFrequency: "weekly",
       priority: 0.6,
     });
   }
-  for (const collection of collections ?? []) {
+  for (const collection of collections) {
     entries.push({
       url: `${base}/coleccion/${collection.slug}`,
       lastModified: collection.updated_at ? new Date(collection.updated_at) : undefined,
@@ -72,7 +77,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     });
   }
-  for (const store of stores ?? []) {
+  for (const store of stores) {
     entries.push({
       url: `${base}/tiendas/${store.slug}`,
       changeFrequency: "monthly",

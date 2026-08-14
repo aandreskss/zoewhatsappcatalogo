@@ -17,11 +17,17 @@ export const metadata = {
  * blanco.
  */
 export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
-  const [sections, vesRate] = await Promise.all([
-    getHomeSections(supabase),
-    getVesReferenceRate(supabase),
-  ]);
+  let sections: Awaited<ReturnType<typeof getHomeSections>> = [];
+  let vesRate: Awaited<ReturnType<typeof getVesReferenceRate>> = null;
+  try {
+    const supabase = await createSupabaseServerClient();
+    [sections, vesRate] = await Promise.all([
+      getHomeSections(supabase),
+      getVesReferenceRate(supabase),
+    ]);
+  } catch {
+    // Sin Supabase configurado, muestra el estado vacío
+  }
 
   const organizationJsonLd = buildOrganizationJsonLd();
 
