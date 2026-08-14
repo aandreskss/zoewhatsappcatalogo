@@ -252,6 +252,14 @@ export default async function AdminOrderDetailPage({
                 {customer.state ? `, ${customer.state}` : ""}
               </p>
             ) : null}
+            {order.customer_id ? (
+              <Link
+                href={`/admin/clientes/${order.customer_id}`}
+                className="mt-2 inline-block text-xs underline text-[var(--color-muted-foreground)]"
+              >
+                Ver perfil de cliente →
+              </Link>
+            ) : null}
           </section>
 
           <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4">
