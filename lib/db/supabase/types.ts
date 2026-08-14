@@ -935,7 +935,8 @@ export interface Database {
             | "meta_capi"
             | "tiktok"
             | "google_ads"
-            | "bcv_rate_provider";
+            | "bcv_rate_provider"
+            | "google_search_console";
           public_config: Json;
           secret_ref: string | null;
           active: boolean;
