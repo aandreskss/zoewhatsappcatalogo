@@ -47,6 +47,7 @@ export interface Database {
       };
       user_roles: {
         Row: {
+          id: string;
           user_id: string;
           role_id: string;
           store_id: string | null;
