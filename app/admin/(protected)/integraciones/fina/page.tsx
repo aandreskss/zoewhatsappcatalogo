@@ -28,6 +28,7 @@ export default async function FinaIntegrationPage() {
         </div>
       </div>
 
+      {/* Cards */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Export card */}
         <div className="rounded-2xl border border-[#EBE4E1] bg-white p-6">
@@ -64,50 +65,53 @@ export default async function FinaIntegrationPage() {
 
       {/* Help section */}
       <div className="flex flex-col gap-6 rounded-2xl border border-[#EBE4E1] bg-[#F4EFEc] p-6">
+
+        {/* How to use */}
         <div>
           <h3 className="text-sm font-semibold text-[#29252A]">¿Cómo usar esta integración?</h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
-              Exportar pedidos a Fina
-            </p>
-            <ol className="mt-2 flex flex-col gap-1 text-xs text-[#29252A]/70">
-              <li>1. Elige el rango de fechas y estados.</li>
-              <li>2. Descarga el CSV.</li>
-              <li>3. En Fina: Ventas → Importar → sube el CSV.</li>
-            </ol>
-            <a
-              href="/samples/ejemplo-zoe-a-fina.csv"
-              download
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#EBE4E1] bg-white px-3 py-1.5 text-xs font-medium text-[#29252A]/60 transition-colors hover:border-[#C9748A]/40 hover:text-[#C9748A]"
-            >
-              <Download size={11} />
-              Descargar CSV de ejemplo
-            </a>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
-              Importar inventario desde Fina
-            </p>
-            <ol className="mt-2 flex flex-col gap-1 text-xs text-[#29252A]/70">
-              <li>1. En Fina: Inventario → Exportar → CSV.</li>
-              <li>2. Asegúrate de que el CSV tiene columna "sku" y "cantidad".</li>
-              <li>3. Elige la modalidad y sube el archivo aquí.</li>
-            </ol>
-            <a
-              href="/samples/ejemplo-fina-a-zoe.csv"
-              download
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#EBE4E1] bg-white px-3 py-1.5 text-xs font-medium text-[#29252A]/60 transition-colors hover:border-[#C9748A]/40 hover:text-[#C9748A]"
-            >
-              <Download size={11} />
-              Descargar CSV de ejemplo
-            </a>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
+                Exportar pedidos a Fina
+              </p>
+              <ol className="mt-2 flex flex-col gap-1 text-xs text-[#29252A]/70">
+                <li>1. Elige el rango de fechas y estados.</li>
+                <li>2. Descarga el CSV.</li>
+                <li>3. En Fina: Ventas → Importar → sube el CSV.</li>
+              </ol>
+              <a
+                href="/samples/ejemplo-zoe-a-fina.csv"
+                download
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#EBE4E1] bg-white px-3 py-1.5 text-xs font-medium text-[#29252A]/60 transition-colors hover:border-[#C9748A]/40 hover:text-[#C9748A]"
+              >
+                <Download size={11} />
+                Descargar CSV de ejemplo
+              </a>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
+                Importar inventario desde Fina
+              </p>
+              <ol className="mt-2 flex flex-col gap-1 text-xs text-[#29252A]/70">
+                <li>1. En Fina: Inventario → Exportar → CSV.</li>
+                <li>2. Asegúrate de que el CSV tiene columna &quot;sku&quot; y &quot;cantidad&quot;.</li>
+                <li>3. Elige la modalidad y sube el archivo aquí.</li>
+              </ol>
+              <a
+                href="/samples/ejemplo-fina-a-zoe.csv"
+                download
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#EBE4E1] bg-white px-3 py-1.5 text-xs font-medium text-[#29252A]/60 transition-colors hover:border-[#C9748A]/40 hover:text-[#C9748A]"
+              >
+                <Download size={11} />
+                Descargar CSV de ejemplo
+              </a>
+            </div>
           </div>
         </div>
 
         {/* Column legend */}
         <div className="grid gap-6 sm:grid-cols-2">
-          {/* Zoe → Fina columns */}
+          {/* Zoe → Fina */}
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
               Columnas del CSV Zoe → Fina
@@ -144,7 +148,7 @@ export default async function FinaIntegrationPage() {
             </div>
           </div>
 
-          {/* Fina → Zoe columns */}
+          {/* Fina → Zoe */}
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
               Columnas del CSV Fina → Zoe
@@ -152,7 +156,7 @@ export default async function FinaIntegrationPage() {
             <div className="flex flex-col gap-1.5">
               {[
                 { col: "sku", req: true, desc: "Código exacto de la variante en Zoe. Obligatorio." },
-                { col: "cantidad", req: true, desc: "Stock a establecer. Acepta también: stock, existencia, qty, quantity. Obligatorio." },
+                { col: "cantidad", req: true, desc: "Stock a establecer. Acepta también: stock, existencia, qty, quantity." },
                 { col: "precio_costo", req: false, desc: "Costo unitario en USD. Acepta también: costo, cost. Opcional." },
                 { col: "precio_venta", req: false, desc: "Precio de venta en USD. Acepta también: precio, price. Opcional." },
                 { col: "tienda", req: false, desc: "Código de sucursal (ej. ZOE-CCS). Requerido en modo multi-sucursal. Acepta también: sucursal, store_code, codigo_tienda." },
@@ -171,10 +175,14 @@ export default async function FinaIntegrationPage() {
               ))}
             </div>
             <p className="mt-4 text-[11px] text-[#29252A]/40">
-              * Los encabezados no distinguen mayúsculas ni tildes — <span className="font-mono">Cantidad</span>, <span className="font-mono">CANTIDAD</span> y <span className="font-mono">cantidad</span> son equivalentes.
+              * Los encabezados no distinguen mayúsculas ni tildes —{" "}
+              <span className="font-mono">Cantidad</span>,{" "}
+              <span className="font-mono">CANTIDAD</span> y{" "}
+              <span className="font-mono">cantidad</span> son equivalentes.
             </p>
           </div>
         </div>
+
       </div>
     </div>
   );
