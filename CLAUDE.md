@@ -108,9 +108,32 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 ## Integraciones externas importantes
 
 - **Cloudinary**: subida de imágenes. Dominios `api.cloudinary.com` (connect-src) y `res.cloudinary.com` (img-src) ya en la CSP de `next.config.ts`.
+- **Unsplash**: imágenes de demo. Dominio `images.unsplash.com` ya en `remotePatterns` de `next.config.ts`.
 - **Fina Partner**: sin API pública. Integración vía CSV bidireccional: exportar pedidos (`/api/admin/export/pedidos`) e importar inventario (`/api/admin/import/inventario`).
 - **Google Search Console**: verificación vía meta tag. El código se guarda en `integrations` con provider `google_search_console` y se inyecta en `generateMetadata()` del root layout.
 
 ## Datos de inventario
 
 Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_movements` (audit trail). Los tipos de movimiento son: `entrada | salida | ajuste | transferencia | venta | liberacion`. Todo ajuste manual crea un registro en `inventory_movements`.
+
+## Sistema de banners y secciones del Home
+
+- **Tabla `banners`**: campos `image_desktop_url`, `image_mobile_url`, `headline`, `copy`, `cta_label`, `cta_url`, `position` (default `'home'`), `priority` (int), `active`, `starts_at`/`ends_at` opcionales para ventanas de tiempo.
+- **`getActiveBanners(supabase, position)`** en `lib/domain/home.ts` retorna **todos** los banners activos de la posición ordenados por prioridad, filtrados por ventana de fechas. Es la función principal para el carousel.
+- **`getActiveBanner`** (deprecada) retorna solo el primero; se mantiene para uso futuro fuera del Home.
+- **`BannerCarousel`** (`components/home/banner-carousel.tsx`): componente Client con autoavance cada 5 s, flechas y puntos. Muestra `image_mobile_url` en móvil (aspect 4:5) e `image_desktop_url` en desktop (aspect 21:9). Si hay un solo banner, se muestra estático sin controles.
+- **`HomeSectionView.banners`** es `BannerView[]` (plural). El renderer llama a `<BannerCarousel banners={section.banners} />`.
+- Las secciones del Home se administran desde `/admin/marketing/home` (tabla `home_sections`). El bloque tipo `"banner"` toma `config.position` para saber qué pool de banners mostrar.
+
+## Productos — borrado y gestión de imágenes
+
+- **Borrado de productos**: soft-delete — se escribe `deleted_at = now()`. Las queries públicas y del admin filtran `.is("deleted_at", null)`. Acción: `deleteProduct(productId)` en `actions.ts`, componente `DeleteProductButton` (variante `"full"` en detalle, `"icon"` en lista).
+- **Borrado de imágenes**: `deleteImageAction(imageId, productId)`. Si era la imagen principal (`is_primary=true`), promueve automáticamente la siguiente por orden. Componente `DeleteImageButton` (X absoluto sobre el thumbnail, visible en hover).
+- `listPublishedProducts` filtra `status='published'` + `deleted_at IS NULL` + al menos una variante activa.
+
+## Notas sobre la DB de demo
+
+- Script en `supabase/seed/demo_data.sql` — idempotente: si ya existe `slug='tenis-clasico-blanco'`, no corre.
+- Columna `is_new` en `products` se debe citar siempre como `"is_new"` en SQL (es keyword reservada en PostgreSQL dentro de triggers).
+- La tabla `stores` tiene columna `code` NOT NULL — incluirla en cualquier INSERT manual.
+- Si el script ya corrió y se necesita agregar nuevos registros (ej. banners), hacerlo con SQL directo usando `INSERT ... WHERE NOT EXISTS` o `UPDATE ... WHERE name = '...'`.
