@@ -20,8 +20,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // request (rompiendo el ISR de `/catalogo`/`/producto/[slug]`/Home) solo
   // para leer un theme que de todas formas es público. Mismo patrón que
   // `app/sitemap.ts`.
-  const supabase = createSupabaseServiceRoleClient();
-  const theme = await getActiveTheme(supabase);
+  let theme = null;
+  try {
+    const supabase = createSupabaseServiceRoleClient();
+    theme = await getActiveTheme(supabase);
+  } catch {
+    // Sin vars de entorno (build/preview sin Supabase) → theme por defecto de globals.css
+  }
 
   return (
     <html lang="es-VE">
