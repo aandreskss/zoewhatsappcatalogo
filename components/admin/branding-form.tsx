@@ -55,6 +55,18 @@ export function BrandingForm({ current }: { current: SafeThemeTokens }) {
         defaultValue={current.colorAccent}
         disabled={isPending}
       />
+      <ColorField
+        name="colorBackground"
+        label="Color de fondo"
+        defaultValue={current.colorBackground}
+        disabled={isPending}
+      />
+      <ColorField
+        name="colorForeground"
+        label="Color de texto principal"
+        defaultValue={current.colorForeground}
+        disabled={isPending}
+      />
 
       <div className="flex flex-col gap-1">
         <Label htmlFor="radius">Radio de bordes</Label>

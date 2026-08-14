@@ -1,22 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/cart/cart-context";
 import { MobileMenu } from "@/components/layout/mobile-menu";
 
 export function SiteHeader({
   categories,
+  navLinks,
 }: {
   categories: { name: string; slug: string }[];
+  navLinks: { label: string; href: string }[];
 }) {
   const { itemCount } = useCart();
-
-  const leftLinks = [
-    { label: "Inicio", href: "/" },
-    { label: "Catálogo", href: "/catalogo" },
-    { label: "Tiendas", href: "/tiendas" },
-  ];
 
   const rightLinks = categories.slice(0, 3).map((c) => ({
     label: c.name,
@@ -35,11 +30,11 @@ export function SiteHeader({
       <div className="mx-auto max-w-[1440px] px-4 md:px-8 lg:px-12">
         <div className="relative flex items-center justify-between h-14 md:h-16">
           {/* Mobile: hamburger left */}
-          <MobileMenu categories={categories} />
+          <MobileMenu categories={categories} navLinks={navLinks} />
 
           {/* Desktop: nav left */}
           <nav className="hidden md:flex items-center gap-7 flex-1">
-            {leftLinks.map((item) => (
+            {navLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

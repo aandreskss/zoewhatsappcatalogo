@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { listPublishedProducts } from "@/lib/domain/catalog";
 import { getVesReferenceRate } from "@/lib/domain/currency";
+import { getSiteContent, DEFAULT_SITE_CONTENT } from "@/lib/domain/site-content";
 import { getCartSessionId } from "@/lib/cart/session-cookie";
 import { trackEvent } from "@/lib/domain/analytics";
 import { ProductGrid } from "@/components/catalog/product-grid";
 import { CatalogFiltersBar } from "@/components/catalog/catalog-filters-bar";
+import type { SiteContent } from "@/lib/domain/site-content-types";
 
 export const revalidate = 60;
 
@@ -44,7 +46,8 @@ export default async function CatalogoPage({
 
   const sort = orden === "precio_asc" || orden === "precio_desc" ? orden : "recientes";
 
-  const [products, vesRate, sessionId, categoriesResult] = await Promise.all([
+  let content: SiteContent = DEFAULT_SITE_CONTENT;
+  const [products, vesRate, sessionId, categoriesResult, contentResult] = await Promise.all([
     listPublishedProducts(supabase, {
       categorySlug: categoria,
       brandSlug: marca,
@@ -57,7 +60,9 @@ export default async function CatalogoPage({
     getVesReferenceRate(supabase),
     getCartSessionId(),
     supabase.from("categories").select("name, slug").eq("active", true).order("order").limit(12),
+    getSiteContent(supabase),
   ]);
+  content = contentResult;
 
   const categories = categoriesResult.data ?? [];
 
@@ -108,7 +113,7 @@ export default async function CatalogoPage({
           ) : (
             <>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted-foreground)] mb-1">
-                Colección SS 2025
+                {content.catalogLabel}
               </p>
               <h1 className="font-display text-3xl md:text-4xl text-[var(--color-foreground)]">
                 Catálogo completo

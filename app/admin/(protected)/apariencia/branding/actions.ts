@@ -16,6 +16,8 @@ const themeSchema = z.object({
   colorPrimary: z.string().regex(HEX_COLOR_RE, "Color primario inválido"),
   colorSecondary: z.string().regex(HEX_COLOR_RE, "Color secundario inválido"),
   colorAccent: z.string().regex(HEX_COLOR_RE, "Color de acento inválido"),
+  colorBackground: z.string().regex(HEX_COLOR_RE, "Color de fondo inválido"),
+  colorForeground: z.string().regex(HEX_COLOR_RE, "Color de texto inválido"),
   radius: z.enum(["sm", "md", "lg"]),
 });
 
@@ -36,6 +38,8 @@ export async function saveTheme(
     colorPrimary: formData.get("colorPrimary"),
     colorSecondary: formData.get("colorSecondary"),
     colorAccent: formData.get("colorAccent"),
+    colorBackground: formData.get("colorBackground"),
+    colorForeground: formData.get("colorForeground"),
     radius: formData.get("radius"),
   });
   if (!parsed.success) {

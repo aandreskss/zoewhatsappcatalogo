@@ -1,9 +1,11 @@
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { getHomeSections } from "@/lib/domain/home";
 import { getVesReferenceRate } from "@/lib/domain/currency";
+import { getSiteContent, DEFAULT_SITE_CONTENT } from "@/lib/domain/site-content";
 import { HomeSectionRenderer } from "@/components/home/home-section-renderer";
 import { buildOrganizationJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 import Link from "next/link";
+import type { SiteContent } from "@/lib/domain/site-content-types";
 
 export const revalidate = 60;
 export const metadata = {
@@ -13,11 +15,13 @@ export const metadata = {
 export default async function HomePage() {
   let sections: Awaited<ReturnType<typeof getHomeSections>> = [];
   let vesRate: Awaited<ReturnType<typeof getVesReferenceRate>> = null;
+  let content: SiteContent = DEFAULT_SITE_CONTENT;
   try {
     const supabase = await createSupabaseServerClient();
-    [sections, vesRate] = await Promise.all([
+    [sections, vesRate, content] = await Promise.all([
       getHomeSections(supabase),
       getVesReferenceRate(supabase),
+      getSiteContent(supabase),
     ]);
   } catch {
     // Sin Supabase configurado, muestra el estado vacío
@@ -39,19 +43,19 @@ export default async function HomePage() {
 
         <div className="absolute bottom-10 left-6 right-6 md:bottom-16 md:left-16 md:right-auto md:max-w-lg">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70 mb-3">
-            Nueva colección
+            {content.heroLabel}
           </p>
           <h1 className="font-display text-5xl md:text-7xl text-white leading-tight mb-4">
-            Encuentra tu<br />próximo favorito.
+            {content.heroTitle}
           </h1>
           <p className="text-sm text-white/70 mb-8 leading-relaxed max-w-xs">
-            Descubre los nuevos modelos de Zoe. Diseñados para cada momento, pensados para ti.
+            {content.heroSubtitle}
           </p>
           <Link
-            href="/catalogo"
+            href={content.heroCtaHref}
             className="inline-flex items-center gap-3 bg-[var(--color-background)] text-[var(--color-foreground)] text-sm font-semibold px-7 py-3.5 rounded-[var(--radius-md)] hover:bg-white transition-colors duration-150"
           >
-            Ver colección
+            {content.heroCtaText}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -103,18 +107,20 @@ export default async function HomePage() {
       <section className="mx-6 md:mx-12 rounded-[var(--radius-xl)] overflow-hidden my-16 md:my-24" style={{ backgroundColor: "#EEE8F8" }}>
         <div className="flex flex-col md:flex-row items-center">
           <div className="flex-1 p-10 md:p-16 order-2 md:order-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted-foreground)] mb-4">Colección especial</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted-foreground)] mb-4">
+              {content.promoLabel}
+            </p>
             <h2 className="font-display text-4xl md:text-5xl text-[var(--color-foreground)] leading-tight mb-4">
-              Camina a<br />tu manera.
+              {content.promoTitle}
             </h2>
             <p className="text-sm text-[var(--color-muted-foreground)] mb-8 max-w-xs leading-relaxed">
-              Encuentra modelos para cada momento de tu vida. Desde el trabajo hasta la noche.
+              {content.promoSubtitle}
             </p>
             <Link
-              href="/catalogo"
+              href={content.promoCtaHref}
               className="inline-flex items-center gap-2 bg-[var(--color-foreground)] text-[var(--color-background)] text-sm font-semibold px-6 py-3 rounded-[var(--radius-md)] hover:opacity-90 transition-opacity"
             >
-              Descubrir
+              {content.promoCtaText}
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
@@ -170,7 +176,7 @@ export default async function HomePage() {
                   Ver ubicación
                 </Link>
                 <a
-                  href="https://wa.me/584241234567"
+                  href={`https://wa.me/${content.whatsapp.replace(/^\+/, "").replace(/\s/g, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-semibold px-4 py-2 rounded-[var(--radius-sm)] bg-[var(--color-rose-light)] text-[var(--color-primary)] hover:opacity-90 transition-opacity"

@@ -21,6 +21,8 @@ export function ThemeStyleOverride({ theme }: { theme: SafeThemeTokens | null })
   --color-secondary: ${theme.colorSecondary};
   --color-secondary-foreground: ${contrastForeground(theme.colorSecondary)};
   --color-accent: ${theme.colorAccent};
+  --color-background: ${theme.colorBackground};
+  --color-foreground: ${theme.colorForeground};
   --radius-sm: ${radius.sm};
   --radius-md: ${radius.md};
   --radius-lg: ${radius.lg};

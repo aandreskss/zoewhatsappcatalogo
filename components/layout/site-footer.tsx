@@ -1,6 +1,9 @@
 import Link from "next/link";
+import type { SiteContent } from "@/lib/domain/site-content-types";
 
-export function SiteFooter() {
+export function SiteFooter({ content }: { content: SiteContent }) {
+  const whatsappNumber = content.whatsapp.replace(/^\+/, "").replace(/\s/g, "");
+
   return (
     <footer className="border-t border-[var(--color-border)] bg-[var(--color-background)]">
       <div className="mx-auto max-w-[1440px] px-6 md:px-12 py-16 md:py-20">
@@ -12,7 +15,7 @@ export function SiteFooter() {
               Encuentra tu talla y arma tu pedido para coordinarlo por WhatsApp. Calzado femenino en Valencia, Venezuela.
             </p>
             <a
-              href="https://wa.me/584241234567"
+              href={`https://wa.me/${whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 mt-6 text-sm font-semibold text-[var(--color-primary)] hover:text-[#B8647A] transition-colors"
@@ -46,7 +49,7 @@ export function SiteFooter() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted-foreground)] mb-4">Síguenos</p>
             <a
-              href="https://instagram.com"
+              href={`https://instagram.com/${content.instagram.replace(/^@/, "")}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm font-medium text-[var(--color-foreground)] hover:text-[var(--color-primary)] transition-colors mb-6"
@@ -56,7 +59,7 @@ export function SiteFooter() {
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
               </svg>
-              @zoe.valencia
+              {content.instagram}
             </a>
             <p className="text-sm text-[var(--color-muted-foreground)]">Valencia, Venezuela</p>
           </div>

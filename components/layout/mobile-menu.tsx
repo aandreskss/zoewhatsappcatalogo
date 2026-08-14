@@ -5,15 +5,15 @@ import Link from "next/link";
 
 export function MobileMenu({
   categories,
+  navLinks,
 }: {
   categories: { name: string; slug: string }[];
+  navLinks: { label: string; href: string }[];
 }) {
   const [open, setOpen] = React.useState(false);
 
   const navItems = [
-    { label: "Inicio", href: "/" },
-    { label: "Catálogo", href: "/catalogo" },
-    { label: "Tiendas", href: "/tiendas" },
+    ...navLinks,
     ...categories.map((c) => ({ label: c.name, href: `/categoria/${c.slug}` })),
   ];
 
