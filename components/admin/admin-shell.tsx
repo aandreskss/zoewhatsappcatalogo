@@ -74,7 +74,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Logística",
     items: [
-      { href: "/admin/entrega/pickup", label: "Retiro / Delivery", icon: Store },
+      { href: "/admin/entrega/sucursales", label: "Sucursales", icon: Store },
+      { href: "/admin/entrega/pickup", label: "Retiro / Delivery", icon: MapPin },
       { href: "/admin/entrega/delivery", label: "Zonas de delivery", icon: MapPin },
       { href: "/admin/entrega/envios", label: "Envíos", icon: Truck },
       { href: "/admin/entrega/horarios", label: "Horarios", icon: Clock },
