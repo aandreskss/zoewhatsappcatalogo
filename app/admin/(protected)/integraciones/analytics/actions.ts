@@ -24,10 +24,11 @@ const PROVIDER_CONFIG_KEY = {
   gtm: "containerId",
   meta_pixel: "pixelId",
   tiktok: "pixelId",
+  google_search_console: "verificationCode",
 } as const;
 
 const integrationSchema = z.object({
-  provider: z.enum(["ga4", "gtm", "meta_pixel", "tiktok"]),
+  provider: z.enum(["ga4", "gtm", "meta_pixel", "tiktok", "google_search_console"]),
   configValue: z.string().trim().max(200).optional(),
   active: z.coerce.boolean(),
 });

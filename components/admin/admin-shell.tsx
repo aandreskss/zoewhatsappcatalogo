@@ -12,6 +12,7 @@ import {
   Package,
   Tag,
   Bookmark,
+  Layers,
   DollarSign,
   CreditCard,
   Store,
@@ -64,6 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/productos", label: "Productos", icon: Package },
       { href: "/admin/categorias", label: "Categorías", icon: Tag },
       { href: "/admin/marcas", label: "Marcas", icon: Bookmark },
+      { href: "/admin/inventario", label: "Inventario", icon: Layers },
     ],
   },
   {

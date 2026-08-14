@@ -32,6 +32,15 @@ const PROVIDERS = [
     placeholder: "ABCDEFGHIJKLMNOPQRST",
     configKey: "pixelId",
   },
+  {
+    provider: "google_search_console" as const,
+    label: "Google Search Console",
+    fieldLabel: "Código de verificación",
+    placeholder: "AbCdEfGhIjKlMnOpQrSt1234567890abcde",
+    configKey: "verificationCode",
+    activeLabel: "Activo (inserta la meta tag de verificación en el sitio)",
+    hint: 'En Search Console → Agregar propiedad → método "Etiqueta HTML": copia solo el valor del atributo content (sin las comillas ni la etiqueta completa).',
+  },
 ];
 
 /**
@@ -46,10 +55,7 @@ export default async function AnalyticsIntegrationsPage() {
   const { data } = await supabase
     .from("integrations")
     .select("provider, public_config, active")
-    .in(
-      "provider",
-      PROVIDERS.map((p) => p.provider),
-    );
+    .in("provider", PROVIDERS.map((p) => p.provider));
 
   const byProvider = new Map((data ?? []).map((row) => [row.provider, row]));
 
@@ -80,6 +86,8 @@ export default async function AnalyticsIntegrationsPage() {
               placeholder={p.placeholder}
               currentValue={currentValue}
               currentActive={row?.active ?? false}
+              activeLabel={"activeLabel" in p ? p.activeLabel : undefined}
+              hint={"hint" in p ? p.hint : undefined}
             />
           );
         })}

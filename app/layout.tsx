@@ -4,15 +4,38 @@ import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getActiveTheme } from "@/lib/domain/theme";
 import { ThemeStyleOverride } from "@/components/theme-style-override";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  title: {
-    default: "Zoe Shoes",
-    template: "%s · Zoe Shoes",
-  },
-  description:
-    "Catálogo de zapatos Zoe — encuentra tu talla y arma tu pedido para coordinarlo por WhatsApp.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let googleVerification: string | undefined;
+  try {
+    const supabase = createSupabaseServiceRoleClient();
+    const { data } = await supabase
+      .from("integrations")
+      .select("public_config, active")
+      .eq("provider", "google_search_console")
+      .single();
+    if (data?.active) {
+      const cfg = data.public_config as Record<string, unknown>;
+      if (typeof cfg?.verificationCode === "string" && cfg.verificationCode) {
+        googleVerification = cfg.verificationCode;
+      }
+    }
+  } catch {
+    // Sin Supabase (build/preview) → sin tag de verificación
+  }
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+    title: {
+      default: "Zoe Shoes",
+      template: "%s · Zoe Shoes",
+    },
+    description:
+      "Catálogo de zapatos Zoe — encuentra tu talla y arma tu pedido para coordinarlo por WhatsApp.",
+    ...(googleVerification && {
+      verification: { google: googleVerification },
+    }),
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Cliente de service role (no de sesión) a propósito: llamar a
