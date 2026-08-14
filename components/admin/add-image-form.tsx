@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/admin/image-upload";
-import { isCloudinaryConfigured } from "@/lib/cloudinary/upload";
 
 const initialState: FormState = { error: null };
 
@@ -19,7 +18,7 @@ export function AddImageForm({ productId }: { productId: string }) {
     initialState,
   );
   const urlInputRef = useRef<HTMLInputElement>(null);
-  const [showUrlFallback, setShowUrlFallback] = useState(!isCloudinaryConfigured());
+  const [showUrl, setShowUrl] = useState(false);
 
   function handleUpload(url: string) {
     if (urlInputRef.current) urlInputRef.current.value = url;
@@ -29,34 +28,26 @@ export function AddImageForm({ productId }: { productId: string }) {
     <form action={formAction} className="flex flex-col gap-4 rounded-xl border border-[var(--color-border)] bg-white p-4">
       <p className="text-sm font-semibold text-[var(--color-foreground)]">Agregar imagen</p>
 
-      {/* Uploader */}
+      {/* Upload zone (siempre visible) */}
       <ImageUpload
         label="Imagen del producto"
         onUpload={handleUpload}
         disabled={isPending}
       />
 
-      {/* Input de URL oculto (requerido por la Server Action) */}
-      <input
-        ref={urlInputRef}
-        name="url"
-        type="url"
-        required
-        className="hidden"
-      />
+      {/* Input URL oculto — requerido por la Server Action */}
+      <input ref={urlInputRef} name="url" type="url" required className="hidden" />
 
-      {/* Fallback: URL manual (toggle) */}
-      {isCloudinaryConfigured() && (
-        <button
-          type="button"
-          onClick={() => setShowUrlFallback((v) => !v)}
-          className="self-start text-xs text-[var(--color-muted-foreground)] underline"
-        >
-          {showUrlFallback ? "Ocultar campo de URL" : "O pegar una URL directamente"}
-        </button>
-      )}
+      {/* Alternativa: pegar URL */}
+      <button
+        type="button"
+        onClick={() => setShowUrl((v) => !v)}
+        className="self-start text-xs text-[var(--color-muted-foreground)] underline"
+      >
+        {showUrl ? "Ocultar URL manual" : "O pegar una URL directamente"}
+      </button>
 
-      {showUrlFallback && (
+      {showUrl && (
         <div className="flex flex-col gap-1">
           <Label htmlFor="url-manual">URL de imagen</Label>
           <Input
@@ -72,7 +63,7 @@ export function AddImageForm({ productId }: { productId: string }) {
       )}
 
       <div className="flex flex-col gap-1">
-        <Label htmlFor="altText">Texto alternativo (accesibilidad)</Label>
+        <Label htmlFor="altText">Texto alternativo</Label>
         <Input
           id="altText"
           name="altText"
@@ -86,9 +77,9 @@ export function AddImageForm({ productId }: { productId: string }) {
         {isPending ? "Agregando…" : "Agregar imagen"}
       </Button>
 
-      {state.error ? (
+      {state.error && (
         <p className="text-sm text-[var(--color-error)]">{state.error}</p>
-      ) : null}
+      )}
     </form>
   );
 }
