@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { FinaExportForm } from "@/components/admin/fina-export-form";
 import { FinaImportForm } from "@/components/admin/fina-import-form";
+import { Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +63,10 @@ export default async function FinaIntegrationPage() {
       </div>
 
       {/* Help section */}
-      <div className="rounded-2xl border border-[#EBE4E1] bg-[#F4EFEc] p-6">
-        <h3 className="text-sm font-semibold text-[#29252A]">¿Cómo usar esta integración?</h3>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="flex flex-col gap-6 rounded-2xl border border-[#EBE4E1] bg-[#F4EFEc] p-6">
+        <div>
+          <h3 className="text-sm font-semibold text-[#29252A]">¿Cómo usar esta integración?</h3>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
               Exportar pedidos a Fina
@@ -74,6 +76,14 @@ export default async function FinaIntegrationPage() {
               <li>2. Descarga el CSV.</li>
               <li>3. En Fina: Ventas → Importar → sube el CSV.</li>
             </ol>
+            <a
+              href="/samples/ejemplo-zoe-a-fina.csv"
+              download
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#EBE4E1] bg-white px-3 py-1.5 text-xs font-medium text-[#29252A]/60 transition-colors hover:border-[#C9748A]/40 hover:text-[#C9748A]"
+            >
+              <Download size={11} />
+              Descargar CSV de ejemplo
+            </a>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
@@ -84,6 +94,85 @@ export default async function FinaIntegrationPage() {
               <li>2. Asegúrate de que el CSV tiene columna "sku" y "cantidad".</li>
               <li>3. Elige la modalidad y sube el archivo aquí.</li>
             </ol>
+            <a
+              href="/samples/ejemplo-fina-a-zoe.csv"
+              download
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#EBE4E1] bg-white px-3 py-1.5 text-xs font-medium text-[#29252A]/60 transition-colors hover:border-[#C9748A]/40 hover:text-[#C9748A]"
+            >
+              <Download size={11} />
+              Descargar CSV de ejemplo
+            </a>
+          </div>
+        </div>
+
+        {/* Column legend */}
+        <div className="grid gap-6 sm:grid-cols-2">
+          {/* Zoe → Fina columns */}
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
+              Columnas del CSV Zoe → Fina
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {[
+                { col: "Número de pedido", desc: "ID único del pedido (ej. ZOE-2024-001)" },
+                { col: "Fecha", desc: "Fecha de creación del pedido" },
+                { col: "Estado", desc: "Estado actual: Pagado, Confirmado, Entregado…" },
+                { col: "Cliente", desc: "Nombre completo del comprador" },
+                { col: "Teléfono", desc: "Número de contacto del cliente" },
+                { col: "Email", desc: "Correo del cliente (puede estar vacío)" },
+                { col: "Método de pago", desc: "Ej. Transferencia, Pago móvil, Efectivo USD" },
+                { col: "Método de entrega", desc: "Retiro en tienda, Delivery o Envío nacional" },
+                { col: "Ciudad / Estado", desc: "Ubicación del cliente" },
+                { col: "Producto", desc: "Nombre del producto en esa línea" },
+                { col: "SKU", desc: "Código de referencia de la variante" },
+                { col: "Variante", desc: "Ej. 36 / Negro (talla y color)" },
+                { col: "Cantidad", desc: "Unidades compradas en esa línea" },
+                { col: "Precio unit. USD", desc: "Precio unitario en dólares" },
+                { col: "Descuento línea USD", desc: "Descuento aplicado a esa línea" },
+                { col: "Subtotal línea USD", desc: "Precio × Cantidad − Descuento" },
+                { col: "Envío USD", desc: "Costo de envío (solo en la primera línea del pedido)" },
+                { col: "Total pedido USD", desc: "Total general (solo en la primera línea)" },
+                { col: "Tasa de cambio", desc: "Tasa Bs/USD usada al momento del pedido" },
+                { col: "Par de monedas", desc: "Ej. VES/USD" },
+                { col: "Notas de pago", desc: "Observaciones libres del pedido" },
+              ].map(({ col, desc }) => (
+                <div key={col} className="flex gap-2 text-xs">
+                  <span className="w-36 shrink-0 font-mono font-semibold text-[#29252A]/70">{col}</span>
+                  <span className="text-[#29252A]/50">{desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Fina → Zoe columns */}
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#C9748A]">
+              Columnas del CSV Fina → Zoe
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {[
+                { col: "sku", req: true, desc: "Código exacto de la variante en Zoe. Obligatorio." },
+                { col: "cantidad", req: true, desc: "Stock a establecer. Acepta también: stock, existencia, qty, quantity. Obligatorio." },
+                { col: "precio_costo", req: false, desc: "Costo unitario en USD. Acepta también: costo, cost. Opcional." },
+                { col: "precio_venta", req: false, desc: "Precio de venta en USD. Acepta también: precio, price. Opcional." },
+                { col: "tienda", req: false, desc: "Código de sucursal (ej. ZOE-CCS). Requerido en modo multi-sucursal. Acepta también: sucursal, store_code, codigo_tienda." },
+              ].map(({ col, req, desc }) => (
+                <div key={col} className="flex gap-2 text-xs">
+                  <span className="w-28 shrink-0">
+                    <span className="font-mono font-semibold text-[#29252A]/70">{col}</span>
+                    {req ? (
+                      <span className="ml-1 text-[10px] font-bold text-red-500">*</span>
+                    ) : (
+                      <span className="ml-1 text-[10px] text-[#29252A]/30">opt</span>
+                    )}
+                  </span>
+                  <span className="text-[#29252A]/50">{desc}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[11px] text-[#29252A]/40">
+              * Los encabezados no distinguen mayúsculas ni tildes — <span className="font-mono">Cantidad</span>, <span className="font-mono">CANTIDAD</span> y <span className="font-mono">cantidad</span> son equivalentes.
+            </p>
           </div>
         </div>
       </div>
