@@ -1,0 +1,12 @@
+-- Zoe Catalog — 0023: completa el arreglo de 0022 (store_id seguía NOT NULL).
+--
+-- 0022 quitó `store_id` de la primary key compuesta (reemplazándola por un
+-- `id` sustituto), asumiendo que eso bastaba para que `store_id` volviera a
+-- admitir NULL. Comportamiento real de Postgres: cuando una columna entra a
+-- formar parte de una primary key, Postgres marca esa columna como NOT NULL
+-- a nivel de catálogo (pg_attribute.attnotnull) — y ese marcador **no se
+-- revierte automáticamente** al hacer `drop constraint` sobre la primary
+-- key. Hay que quitarlo de forma explícita. Confirmado en producción: tras
+-- correr 0022, el insert de prueba (`super_admin` sin sucursal) seguía
+-- fallando con el mismo error 23502 sobre `store_id`.
+alter table user_roles alter column store_id drop not null;
