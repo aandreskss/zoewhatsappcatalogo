@@ -37,6 +37,12 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "res.cloudinary.com",
       },
+      {
+        // Unsplash — imágenes de demo cargadas vía SQL seed. Reemplazables
+        // desde /admin/productos sin tocar código.
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
   async headers() {
