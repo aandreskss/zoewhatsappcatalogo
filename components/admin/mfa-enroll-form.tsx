@@ -70,7 +70,7 @@ export function MfaEnrollForm() {
           evita además inyectar el SVG como HTML vía `dangerouslySetInnerHTML`. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`data:image/svg+xml;utf-8,${encodeURIComponent(enrollment.qrCodeSvg)}`}
+        src={`data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(enrollment.qrCodeSvg)))}`}
         alt="Código QR para activar la verificación en dos pasos"
         className="mx-auto h-48 w-48"
       />
