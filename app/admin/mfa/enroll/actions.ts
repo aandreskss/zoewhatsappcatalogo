@@ -48,7 +48,7 @@ export async function startMfaEnrollment(): Promise<EnrollStartResult> {
   if (error || !data) {
     return {
       ok: false,
-      error: "No se pudo iniciar el enrolamiento de 2FA. Intenta de nuevo.",
+      error: `Error al iniciar 2FA: ${error?.message ?? "sin datos"} (status: ${error?.status ?? "?"})`,
     };
   }
 
