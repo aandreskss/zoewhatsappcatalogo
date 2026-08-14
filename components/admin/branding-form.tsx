@@ -9,26 +9,17 @@ import {
 import { RADIUS_PRESETS, type SafeThemeTokens } from "@/lib/domain/theme-shared";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ColorPickerField } from "@/components/ui/color-picker-field";
 import { useToast } from "@/components/ui/toast";
 
 const initialState: FormState = { error: null };
 
-/**
- * Selectores de color nativos (`<input type="color">`) en vez de un campo
- * de texto libre: el navegador siempre devuelve un hex válido, así que no
- * hay forma de mandar CSS arbitrario aunque alguien manipule el HTML del
- * formulario — la validación server-side en `actions.ts` es la defensa
- * real, esto es solo para que la UI nunca ofrezca algo inválido.
- */
 export function BrandingForm({ current }: { current: SafeThemeTokens }) {
   const [state, formAction, isPending] = useActionState(saveTheme, initialState);
   const toast = useToast();
   const wasPending = React.useRef(false);
 
   React.useEffect(() => {
-    // Se disparó un submit (isPending pasó de true a false) y no quedó
-    // error: fue exitoso. `useActionState` no da un "fue exitoso" directo,
-    // así que se infiere del flanco de bajada de `isPending`.
     if (wasPending.current && !isPending && !state.error) {
       toast("Branding guardado.", "success");
     }
@@ -36,39 +27,41 @@ export function BrandingForm({ current }: { current: SafeThemeTokens }) {
   }, [isPending, state.error, toast]);
 
   return (
-    <form action={formAction} className="flex max-w-md flex-col gap-4">
-      <ColorField
-        name="colorPrimary"
-        label="Color primario"
-        defaultValue={current.colorPrimary}
-        disabled={isPending}
-      />
-      <ColorField
-        name="colorSecondary"
-        label="Color secundario"
-        defaultValue={current.colorSecondary}
-        disabled={isPending}
-      />
-      <ColorField
-        name="colorAccent"
-        label="Color de acento"
-        defaultValue={current.colorAccent}
-        disabled={isPending}
-      />
-      <ColorField
-        name="colorBackground"
-        label="Color de fondo"
-        defaultValue={current.colorBackground}
-        disabled={isPending}
-      />
-      <ColorField
-        name="colorForeground"
-        label="Color de texto principal"
-        defaultValue={current.colorForeground}
-        disabled={isPending}
-      />
+    <form action={formAction} className="flex max-w-lg flex-col gap-6">
+      <div className="flex flex-col gap-4">
+        <ColorPickerField
+          name="colorPrimary"
+          label="Color primario"
+          defaultValue={current.colorPrimary}
+          disabled={isPending}
+        />
+        <ColorPickerField
+          name="colorSecondary"
+          label="Color secundario"
+          defaultValue={current.colorSecondary}
+          disabled={isPending}
+        />
+        <ColorPickerField
+          name="colorAccent"
+          label="Color de acento"
+          defaultValue={current.colorAccent}
+          disabled={isPending}
+        />
+        <ColorPickerField
+          name="colorBackground"
+          label="Color de fondo"
+          defaultValue={current.colorBackground}
+          disabled={isPending}
+        />
+        <ColorPickerField
+          name="colorForeground"
+          label="Color de texto principal"
+          defaultValue={current.colorForeground}
+          disabled={isPending}
+        />
+      </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="radius">Radio de bordes</Label>
         <select
           id="radius"
@@ -92,36 +85,5 @@ export function BrandingForm({ current }: { current: SafeThemeTokens }) {
         <p className="text-sm text-[var(--color-error)]">{state.error}</p>
       ) : null}
     </form>
-  );
-}
-
-function ColorField({
-  name,
-  label,
-  defaultValue,
-  disabled,
-}: {
-  name: string;
-  label: string;
-  defaultValue: string;
-  disabled: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <Label htmlFor={name}>{label}</Label>
-      <div className="flex items-center gap-3">
-        <input
-          type="color"
-          id={name}
-          name={name}
-          defaultValue={defaultValue}
-          disabled={disabled}
-          className="h-11 w-16 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-border)]"
-        />
-        <span className="text-sm text-[var(--color-muted-foreground)]">
-          {defaultValue}
-        </span>
-      </div>
-    </div>
   );
 }

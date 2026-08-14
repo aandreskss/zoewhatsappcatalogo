@@ -1,7 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
-import { PaymentMethodForm } from "@/components/admin/payment-method-form";
-import { ToggleActive } from "@/components/admin/toggle-active";
-import { togglePaymentMethodActive } from "./actions";
+import { PaymentMethodForm, PaymentMethodCard } from "@/components/admin/payment-method-form";
 
 export const dynamic = "force-dynamic";
 
@@ -12,38 +10,52 @@ export default async function PaymentMethodsPage() {
     .select("id, name, instructions, active")
     .order("order");
 
+  const active = (methods ?? []).filter((m) => m.active);
+  const inactive = (methods ?? []).filter((m) => !m.active);
+
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Métodos de pago</h1>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <div>
+        <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+          Los métodos activos aparecen en el checkout y en el mensaje de WhatsApp del pedido.
+        </p>
+      </div>
+
       <PaymentMethodForm />
 
-      <ul className="flex flex-col divide-y divide-[var(--color-border)] rounded-[var(--radius-lg)] border border-[var(--color-border)]">
-        {(methods ?? []).map((method) => (
-          <li
-            key={method.id}
-            className="flex items-center justify-between gap-4 p-3 text-sm"
-          >
-            <div>
-              <p className="font-medium">{method.name}</p>
-              {method.instructions ? (
-                <p className="text-[var(--color-muted-foreground)]">
-                  {method.instructions}
-                </p>
-              ) : null}
+      {(methods ?? []).length === 0 ? (
+        <p className="text-sm text-[var(--color-muted-foreground)]">
+          Todavía no hay métodos de pago. Agrega el primero arriba.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {active.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                Activos
+              </p>
+              <ul className="flex flex-col gap-2">
+                {active.map((m) => (
+                  <PaymentMethodCard key={m.id} method={m} />
+                ))}
+              </ul>
             </div>
-            <ToggleActive
-              id={method.id}
-              active={method.active}
-              action={togglePaymentMethodActive}
-            />
-          </li>
-        ))}
-        {(methods ?? []).length === 0 ? (
-          <li className="p-6 text-center text-sm text-[var(--color-muted-foreground)]">
-            Todavía no hay métodos de pago.
-          </li>
-        ) : null}
-      </ul>
+          )}
+
+          {inactive.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                Inactivos
+              </p>
+              <ul className="flex flex-col gap-2">
+                {inactive.map((m) => (
+                  <PaymentMethodCard key={m.id} method={m} />
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
