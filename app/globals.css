@@ -30,7 +30,31 @@
   --radius-lg: 0.75rem;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Sombras (sección 28 del plan) — solo tres niveles; más granularidad no
+     tiene uso real en este catálogo (tarjetas, drawers/modales, y poco más). */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.06);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.1);
+  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.16);
+
+  /* Velocidad/curva de animación estándar (sección 28 del plan) — 150-250ms
+     para microinteracciones (agregar al carrito, drawers, filtros). */
+  --transition-duration: 200ms;
+  --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/*
+ * Breakpoints (sección 28 del plan): móvil pequeño ≤360px, móvil 361-639px,
+ * tablet 640-1023px, laptop 1024-1279px, desktop grande ≥1280px. Se
+ * documentan aquí en vez de redefinir los breakpoints de Tailwind
+ * (`sm`/`md`/`lg`/`xl` = 640/768/1024/1280) porque ya coinciden con los
+ * límites que pide el plan salvo por el corte "móvil pequeño" — cambiar los
+ * valores por defecto de Tailwind reescribiría el comportamiento de TODO
+ * componente ya construido con `sm:`/`md:`/`lg:` en las Fases 2-10, un
+ * riesgo no justificado por una distinción que hoy no se usa en ningún
+ * componente. Mapeo: móvil pequeño/móvil = sin prefijo, tablet = `sm:`,
+ * laptop = `lg:`, desktop grande = `xl:`.
+ */
 
 @layer base {
   * {
@@ -41,6 +65,44 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+  }
+
+  /* Animaciones de entrada para Drawer/Dialog (sección 28/29 del plan) —
+     `prefers-reduced-motion` las neutraliza vía la regla global de abajo
+     (pone `animation-duration` en ~0), no hace falta duplicar la condición
+     aquí. */
+  @keyframes drawer-in-bottom {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes drawer-in-side {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .animate-drawer-in-bottom {
+    animation: drawer-in-bottom var(--transition-duration) var(--transition-ease);
+  }
+  .animate-drawer-in-side {
+    animation: drawer-in-side var(--transition-duration) var(--transition-ease);
+  }
+  .animate-fade-in {
+    animation: fade-in var(--transition-duration) var(--transition-ease);
   }
 
   /* Respeta a quienes prefieren menos movimiento (sección 28/119 del plan). */

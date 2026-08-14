@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 const signInSchema = z.object({
   email: z.string().trim().toLowerCase().email("Correo inválido"),
@@ -35,6 +37,19 @@ export async function signInWithPassword(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  }
+
+  // Rate limit de login (sección 23 del plan) — por email (frena fuerza
+  // bruta contra una cuenta puntual, sin importar desde cuántas IPs
+  // distintas) y por IP (frena a alguien probando muchos correos desde el
+  // mismo origen). El mensaje al agotarse el límite es el mismo genérico
+  // de credenciales incorrectas: no delata que existe un límite ni cuál de
+  // los dos se disparó.
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const emailRate = checkRateLimit(`login-email:${parsed.data.email}`, 5, 15 * 60_000);
+  const ipRate = checkRateLimit(`login-ip:${ip}`, 20, 15 * 60_000);
+  if (!emailRate.allowed || !ipRate.allowed) {
+    return { error: "Correo o contraseña incorrectos." };
   }
 
   const supabase = await createSupabaseServerClient();

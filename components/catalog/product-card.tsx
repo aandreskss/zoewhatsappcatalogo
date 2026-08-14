@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ProductListItem } from "@/lib/domain/catalog-types";
 import { formatDualPrice } from "@/lib/domain/pricing";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Tarjeta de producto genérica (sección 9/29 del plan). No contiene texto
@@ -54,26 +54,5 @@ export function ProductCard({
         )}
       </div>
     </Link>
-  );
-}
-
-function Badge({
-  children,
-  variant = "default",
-}: {
-  children: React.ReactNode;
-  variant?: "default" | "accent";
-}) {
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2 py-0.5 text-xs font-medium",
-        variant === "default" &&
-          "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]",
-        variant === "accent" && "bg-[var(--color-accent)] text-[var(--color-foreground)]",
-      )}
-    >
-      {children}
-    </span>
   );
 }

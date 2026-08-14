@@ -25,6 +25,9 @@ const NAV_ITEMS = [
   { href: "/admin/marketing/banners", label: "Banners" },
   { href: "/admin/integraciones/analytics", label: "Analítica" },
   { href: "/admin/reportes", label: "Reportes" },
+  { href: "/admin/apariencia/branding", label: "Branding" },
+  { href: "/admin/seguridad", label: "Seguridad" },
+  { href: "/admin/salud", label: "Salud" },
 ];
 
 export function AdminShell({

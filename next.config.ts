@@ -32,7 +32,44 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // Cabeceras de seguridad (sección 23 del plan). CSP permite
+    // `'unsafe-inline'` en `script-src`/`style-src` a propósito, no por
+    // descuido: `ThemeStyleOverride` inyecta un `<style>` con contenido
+    // dinámico (los tokens del branding activo) y las integraciones de
+    // analítica (`ThirdPartyScripts`) inyectan `<script>` inline (snippets
+    // de GA4/GTM/Meta/TikTok) — ambos casos necesitarían CSP con nonce por
+    // request (plumbing de middleware) para evitar `unsafe-inline` del
+    // todo; se documenta como mejora futura en vez de fingir una CSP más
+    // estricta de la que realmente aplica. `script-src` sigue restringido
+    // a `'self'` + los orígenes exactos de los 3 proveedores de analítica
+    // soportados (nunca `*`), que es donde CSP aporta la protección real
+    // contra XSS de terceros no autorizados.
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://analytics.tiktok.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https://*.supabase.co https://placehold.co https://www.facebook.com https://analytics.tiktok.com",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://analytics.tiktok.com https://www.facebook.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; ");
+
+    const securityHeaders = [
+      { key: "Content-Security-Policy", value: csp },
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+    ];
+
     return [
+      { source: "/:path*", headers: securityHeaders },
       {
         // El panel admin nunca debe indexarse, incluso si alguien
         // olvida el <meta name="robots"> en el layout.

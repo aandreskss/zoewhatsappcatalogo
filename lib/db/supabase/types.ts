@@ -445,6 +445,19 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["company_settings"]["Row"]>;
         Relationships: [];
       };
+      themes: {
+        Row: {
+          id: string;
+          name: string;
+          tokens: Json;
+          active_template: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["themes"]["Row"]> & { name: string };
+        Update: Partial<Database["public"]["Tables"]["themes"]["Row"]>;
+        Relationships: [];
+      };
       customers: {
         Row: {
           id: string;
@@ -737,6 +750,40 @@ export interface Database {
           success: boolean;
         };
         Update: Partial<Database["public"]["Tables"]["exchange_rate_fetch_logs"]["Row"]>;
+        Relationships: [];
+      };
+      cron_job_runs: {
+        Row: {
+          id: string;
+          job_name: string;
+          success: boolean;
+          detail: Json | null;
+          started_at: string;
+          finished_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["cron_job_runs"]["Row"]> & {
+          job_name: string;
+          success: boolean;
+          started_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["cron_job_runs"]["Row"]>;
+        Relationships: [];
+      };
+      error_reports: {
+        Row: {
+          id: string;
+          scope: "public" | "admin" | "server";
+          message: string;
+          digest: string | null;
+          stack: string | null;
+          context: Json | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["error_reports"]["Row"]> & {
+          scope: "public" | "admin" | "server";
+          message: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["error_reports"]["Row"]>;
         Relationships: [];
       };
       shipping_methods: {

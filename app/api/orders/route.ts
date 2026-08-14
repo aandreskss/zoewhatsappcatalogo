@@ -5,6 +5,7 @@ import { getCartSessionId } from "@/lib/cart/session-cookie";
 import { getOrCreateActiveCart } from "@/lib/domain/cart";
 import { createOrder, OrderError } from "@/lib/domain/orders";
 import { getAttribution } from "@/lib/attribution";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 /**
  * El endpoint más sensible del sitio público (sección 29/100 del plan).
@@ -14,6 +15,23 @@ import { getAttribution } from "@/lib/attribution";
  * "qué variantes y qué datos de contacto/entrega quiere el cliente".
  */
 export async function POST(request: Request) {
+  // Rate limit por IP (sección 23 del plan) — 8 pedidos cada 10 minutos es
+  // generoso para un cliente real (incluso reintentando tras un error de
+  // red) pero frena un script que intente inundar WhatsApp de pedidos
+  // falsos. El honeypot en `createOrderSchema` (campo `website`) es la
+  // segunda capa contra bots.
+  const ip = getClientIp(request);
+  const rate = checkRateLimit(`create-order:${ip}`, 8, 10 * 60_000);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      {
+        error:
+          "Demasiados pedidos en poco tiempo. Espera unos minutos e intenta de nuevo.",
+      },
+      { status: 429 },
+    );
+  }
+
   const body: unknown = await request.json().catch(() => null);
   const parsed = createOrderSchema.safeParse(body);
   if (!parsed.success) {

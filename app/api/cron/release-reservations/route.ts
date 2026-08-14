@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
+import { withCronLog } from "@/lib/observability/cron-log";
 
 /**
  * Libera reservas de stock vencidas (sección 14/51 del plan). Vercel Cron
@@ -17,13 +18,21 @@ export async function GET(request: Request) {
   }
 
   const supabase = createSupabaseServiceRoleClient();
-  const { data: releasedCount, error } = await supabase.rpc(
-    "release_expired_reservations",
-  );
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    const releasedCount = await withCronLog(
+      supabase,
+      "release-reservations",
+      async () => {
+        const { data, error } = await supabase.rpc("release_expired_reservations");
+        if (error) throw error;
+        return data ?? 0;
+      },
+      (count) => ({ released: count }),
+    );
+    return NextResponse.json({ released: releasedCount });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({ released: releasedCount ?? 0 });
 }

@@ -3,27 +3,38 @@ import { getActivePublicIntegrations } from "@/lib/domain/integrations";
 import { CartProvider } from "@/components/cart/cart-context";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ThirdPartyScripts } from "@/components/analytics/third-party-scripts";
+import { ToastProvider } from "@/components/ui/toast";
 import { SiteHeader } from "@/components/layout/site-header";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 /**
- * Layout del grupo de rutas públicas (sección 5/31 del plan).
- *
- * El Header completo (buscador, categorías, WhatsApp flotante) y el
- * Footer llegan en la Fase 7 sobre el design system. Por ahora se monta
- * el `CartProvider` (todo el sitio público necesita saber el conteo del
- * carrito), `AnalyticsProvider` (Fase 9 — captura de eventos internos) y
- * un header mínimo funcional.
+ * Layout del grupo de rutas públicas (sección 5/28/31 del plan). Header
+ * (desktop + menú mobile) y Footer completos desde la Fase 1 del design
+ * system. `CartProvider` (conteo del carrito), `AnalyticsProvider` (Fase
+ * 9) y `ToastProvider` (Fase 1 — feedback de acciones tipo "agregado al
+ * carrito") envuelven todo el árbol público.
  */
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseServerClient();
-  const integrations = await getActivePublicIntegrations(supabase);
+  const [integrations, { data: categories }] = await Promise.all([
+    getActivePublicIntegrations(supabase),
+    supabase
+      .from("categories")
+      .select("name, slug")
+      .eq("active", true)
+      .order("order")
+      .limit(8),
+  ]);
 
   return (
     <CartProvider>
       <AnalyticsProvider>
-        <ThirdPartyScripts integrations={integrations} />
-        <SiteHeader />
-        {children}
+        <ToastProvider>
+          <ThirdPartyScripts integrations={integrations} />
+          <SiteHeader categories={categories ?? []} />
+          {children}
+          <SiteFooter />
+        </ToastProvider>
       </AnalyticsProvider>
     </CartProvider>
   );

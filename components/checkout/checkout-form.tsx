@@ -75,6 +75,11 @@ export function CheckoutForm({
       paymentMethodId: String(formData.get("paymentMethodId")),
       paymentNotes: String(formData.get("paymentNotes") || ""),
       idempotencyKey,
+      // Honeypot (sección 23 del plan: mitigar spam/bots en la creación de
+      // pedidos). Un cliente real nunca ve ni llena este campo — ver el
+      // `<input>` oculto más abajo y `createOrderSchema` en
+      // `lib/validation/checkout.ts`, que rechaza cualquier valor no vacío.
+      website: String(formData.get("website") || ""),
     };
 
     const res = await fetch("/api/orders", {
@@ -109,6 +114,13 @@ export function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {/* Honeypot: invisible para una persona (fuera de pantalla, sin
+          tabIndex, con aria-hidden), pero un bot que autocompleta todos los
+          `<input>` de un formulario normalmente lo llena. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <label htmlFor="website">No completar este campo</label>
+        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-[var(--color-muted-foreground)] uppercase">
           Tus datos

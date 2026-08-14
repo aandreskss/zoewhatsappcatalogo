@@ -1,35 +1,15 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { formatUsd } from "@/lib/domain/pricing";
+import { ORDER_STATUS_LABELS } from "@/lib/domain/order-status";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  nuevo: "Nuevo",
-  enviado_whatsapp: "Enviado a WhatsApp",
-  contactado: "Contactado",
-  confirmado: "Confirmado",
-  esperando_pago: "Esperando pago",
-  pagado: "Pagado",
-  preparando: "Preparando",
-  listo_para_entregar: "Listo para entregar",
-  enviado: "Enviado",
-  entregado: "Entregado",
-  cancelado: "Cancelado",
-};
 
 const DELIVERY_LABEL: Record<string, string> = {
   pickup: "Retiro en tienda",
   delivery: "Delivery",
   shipping: "Envío nacional",
-};
-
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  nuevo: "bg-[var(--color-muted)] text-[var(--color-foreground)]",
-  cancelado: "bg-[var(--color-error)]/10 text-[var(--color-error)]",
-  pagado: "bg-[var(--color-primary)]/10 text-[var(--color-primary)]",
-  confirmado: "bg-[var(--color-primary)]/10 text-[var(--color-primary)]",
-  entregado: "bg-[var(--color-primary)]/10 text-[var(--color-primary)]",
 };
 
 /**
@@ -87,7 +67,7 @@ export default async function AdminOrdersPage({
         >
           Todos
         </Link>
-        {Object.entries(STATUS_LABEL).map(([value, label]) => (
+        {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
           <Link
             key={value}
             href={`/admin/pedidos?estado=${value}`}
@@ -136,11 +116,7 @@ export default async function AdminOrdersPage({
                   </td>
                   <td className="p-3">{formatUsd(order.total_usd)}</td>
                   <td className="p-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[order.status] ?? "bg-[var(--color-muted)]"}`}
-                    >
-                      {STATUS_LABEL[order.status] ?? order.status}
-                    </span>
+                    <StatusBadge status={order.status} />
                   </td>
                   <td className="p-3 text-[var(--color-muted-foreground)]">
                     {new Date(order.created_at).toLocaleString("es-VE")}

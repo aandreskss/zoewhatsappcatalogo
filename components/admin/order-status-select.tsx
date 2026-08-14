@@ -3,20 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { changeOrderStatus } from "@/app/admin/(protected)/pedidos/actions";
-
-const OPTIONS = [
-  { value: "nuevo", label: "Nuevo" },
-  { value: "enviado_whatsapp", label: "Enviado a WhatsApp" },
-  { value: "contactado", label: "Contactado" },
-  { value: "confirmado", label: "Confirmado" },
-  { value: "esperando_pago", label: "Esperando pago" },
-  { value: "pagado", label: "Pagado" },
-  { value: "preparando", label: "Preparando" },
-  { value: "listo_para_entregar", label: "Listo para entregar" },
-  { value: "enviado", label: "Enviado" },
-  { value: "entregado", label: "Entregado" },
-  { value: "cancelado", label: "Cancelado" },
-];
+import { ORDER_STATUSES, ORDER_STATUS_LABELS } from "@/lib/domain/order-status";
 
 /**
  * Cambia el estado del pedido (sección 18/58 del plan). La confirmación
@@ -56,9 +43,9 @@ export function OrderStatusSelect({
         }}
         className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-sm"
       >
-        {OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
+        {ORDER_STATUSES.map((value) => (
+          <option key={value} value={value}>
+            {ORDER_STATUS_LABELS[value]}
           </option>
         ))}
       </select>

@@ -51,6 +51,12 @@ export const createOrderSchema = z.object({
   paymentMethodId: z.string().uuid("Selecciona un método de pago"),
   paymentNotes: z.string().trim().max(300).optional(),
   idempotencyKey: z.string().uuid(),
+  // Honeypot antispam (sección 23 del plan) — un cliente real nunca manda
+  // nada aquí (campo oculto, ver `CheckoutForm`); cualquier valor no vacío
+  // es casi con certeza un bot autocompletando el formulario, así que se
+  // rechaza con el mismo error genérico de validación (no delata que es
+  // una trampa antibot).
+  website: z.string().max(0, "Datos inválidos").optional().or(z.literal("")),
   source: z
     .object({
       utmSource: z.string().trim().max(120).optional(),

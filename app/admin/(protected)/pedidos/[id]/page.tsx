@@ -4,22 +4,9 @@ import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { formatUsd, formatVes } from "@/lib/domain/pricing";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { AddOrderNoteForm } from "@/components/admin/add-order-note-form";
+import { orderStatusLabel } from "@/lib/domain/order-status";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  nuevo: "Nuevo",
-  enviado_whatsapp: "Enviado a WhatsApp",
-  contactado: "Contactado",
-  confirmado: "Confirmado",
-  esperando_pago: "Esperando pago",
-  pagado: "Pagado",
-  preparando: "Preparando",
-  listo_para_entregar: "Listo para entregar",
-  enviado: "Enviado",
-  entregado: "Entregado",
-  cancelado: "Cancelado",
-};
 
 const DELIVERY_LABEL: Record<string, string> = {
   pickup: "Retiro en tienda",
@@ -223,10 +210,8 @@ export default async function AdminOrderDetailPage({
                   className="border-t border-[var(--color-border)] pt-2 first:border-0 first:pt-0"
                 >
                   <span className="font-medium">
-                    {entry.from_status
-                      ? `${STATUS_LABEL[entry.from_status] ?? entry.from_status} → `
-                      : ""}
-                    {STATUS_LABEL[entry.to_status] ?? entry.to_status}
+                    {entry.from_status ? `${orderStatusLabel(entry.from_status)} → ` : ""}
+                    {orderStatusLabel(entry.to_status)}
                   </span>
                   <span className="ml-2 text-[var(--color-muted-foreground)]">
                     {new Date(entry.created_at).toLocaleString("es-VE")}

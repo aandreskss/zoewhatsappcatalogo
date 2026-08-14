@@ -114,9 +114,41 @@ tests/            unit / integration / e2e
   código de servidor.
 - `SUPABASE_SERVICE_ROLE_KEY` es un secreto de servidor. Si se filtra, hay
   que rotarla desde el dashboard de Supabase de inmediato.
+- 2FA (TOTP) es obligatorio para `super_admin`/`admin` — se exige al
+  entrar al panel (`app/admin/(protected)/layout.tsx`), no solo al hacer
+  login. Ver `/admin/seguridad` para activarlo/restablecerlo.
+- Rate limiting en memoria sobre login, creación de pedidos y búsqueda
+  (`lib/security/rate-limit.ts`), honeypot en el formulario de checkout, y
+  cabeceras de seguridad + CSP en todo el sitio (`next.config.ts`).
+
+## Testing
+
+```bash
+npm run test        # Vitest — lógica de dominio pura
+npm run test:watch  # Vitest en modo watch
+npm run test:e2e    # Playwright — requiere `npm run dev` corriendo con
+                     # credenciales reales de Supabase
+```
+
+Qué cubre cada suite y qué queda deliberadamente fuera (y por qué) está
+documentado en `tests/README.md`.
+
+## Observabilidad y lanzamiento
+
+Logging estructurado con redacción de datos sensibles
+(`lib/observability/logger.ts`), reporte de errores servidor+cliente con
+integración opcional a Sentry (`lib/observability/error-reporting.ts`),
+registro de corridas de cron jobs (`cron_job_runs`) y un panel de salud
+interno en `/admin/salud` (Super Admin). Los pasos para llevar esto a
+producción (Supabase real, Vercel, Sentry, uptime monitor, checklist de
+lanzamiento) están en [`docs/runbook-lanzamiento.md`](./docs/runbook-lanzamiento.md).
 
 ## Roadmap
 
 El orden de implementación completo (Fase 0 a Fase 12) está en la sección
-41 de `docs/zoe-catalog-plan.md`. Estado actual: Fase 0 completa
-(fundaciones, modelo de datos, autenticación admin).
+41 de `docs/zoe-catalog-plan.md`. Estado actual: Fases 0 a 12 completas a
+nivel de código (catálogo, checkout, WhatsApp, monedas, marketing,
+búsqueda, analítica, SEO, design system, testing, hardening de seguridad
+y observabilidad). Lo que falta es exclusivamente operativo — cuentas y
+credenciales reales que no existen en el entorno de desarrollo — y está
+detallado en `docs/runbook-lanzamiento.md`.

@@ -8,6 +8,8 @@ import {
   moveHomeSection,
 } from "@/app/admin/(protected)/marketing/home/actions";
 import { ToggleActive } from "@/components/admin/toggle-active";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 
 export function HomeSectionRow({
@@ -22,12 +24,31 @@ export function HomeSectionRow({
   active: boolean;
 }) {
   const [isPending, startTransition] = React.useTransition();
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
   const router = useRouter();
+  const toast = useToast();
 
   function move(direction: "up" | "down") {
     startTransition(async () => {
       await moveHomeSection(id, direction);
       router.refresh();
+    });
+  }
+
+  function confirmDelete() {
+    startTransition(async () => {
+      try {
+        await deleteHomeSection(id);
+        setConfirmOpen(false);
+        toast("Bloque eliminado del Home.", "success");
+        router.refresh();
+      } catch (err) {
+        setConfirmOpen(false);
+        toast(
+          err instanceof Error ? err.message : "No se pudo eliminar el bloque",
+          "error",
+        );
+      }
     });
   }
 
@@ -64,16 +85,22 @@ export function HomeSectionRow({
           variant="destructive"
           size="sm"
           disabled={isPending}
-          onClick={() => {
-            startTransition(async () => {
-              await deleteHomeSection(id);
-              router.refresh();
-            });
-          }}
+          onClick={() => setConfirmOpen(true)}
         >
           Eliminar
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Eliminar bloque del Home"
+        description={`Esto quita "${title ?? type}" del Home público de inmediato. No se puede deshacer.`}
+        confirmLabel="Eliminar"
+        isDangerous
+        isPending={isPending}
+      />
     </li>
   );
 }

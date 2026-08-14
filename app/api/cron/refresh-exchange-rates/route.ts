@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { refreshAutomaticExchangeRates } from "@/lib/domain/exchange-rate-provider";
+import { withCronLog } from "@/lib/observability/cron-log";
+import type { Json } from "@/lib/db/supabase/types";
 
 /**
  * Refresca la tasa BCV automática (USD/VES y EUR/VES) — sección 15 del
@@ -17,7 +19,12 @@ export async function GET(request: Request) {
   }
 
   const supabase = createSupabaseServiceRoleClient();
-  const results = await refreshAutomaticExchangeRates(supabase);
+  const results = await withCronLog(
+    supabase,
+    "refresh-exchange-rates",
+    () => refreshAutomaticExchangeRates(supabase),
+    (r) => r as unknown as Json,
+  );
 
   return NextResponse.json({ results });
 }
