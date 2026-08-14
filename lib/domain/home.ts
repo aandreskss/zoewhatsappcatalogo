@@ -42,19 +42,17 @@ export interface HomeSectionView {
   categories?: { id: string; name: string; slug: string; imageUrl: string | null }[];
   brands?: { id: string; name: string; slug: string; logoUrl: string | null }[];
   stores?: { id: string; name: string; slug: string; address: string | null }[];
-  banner?: BannerView | null;
+  banners?: BannerView[];
 }
 
 /**
- * Banner activo de mayor prioridad para una posición dada, dentro de su
- * ventana de fechas si tiene una configurada (sección 19 del plan:
- * banners con `starts_at`/`ends_at` para promociones programadas).
- * Reutilizable fuera del Home (categoría, producto) en el futuro.
+ * Todos los banners activos para una posición, ordenados por prioridad
+ * descendente y filtrados por ventana de fechas. El carousel los rota en orden.
  */
-export async function getActiveBanner(
+export async function getActiveBanners(
   supabase: DB,
   position = "home",
-): Promise<BannerView | null> {
+): Promise<BannerView[]> {
   const nowIso = new Date().toISOString();
   const { data } = await supabase
     .from("banners")
@@ -66,23 +64,31 @@ export async function getActiveBanner(
     .order("priority", { ascending: false })
     .limit(20);
 
-  const candidate = (data ?? []).find((banner) => {
-    if (banner.starts_at && banner.starts_at > nowIso) return false;
-    if (banner.ends_at && banner.ends_at < nowIso) return false;
-    return true;
-  });
+  return (data ?? [])
+    .filter((banner) => {
+      if (banner.starts_at && banner.starts_at > nowIso) return false;
+      if (banner.ends_at && banner.ends_at < nowIso) return false;
+      return true;
+    })
+    .map((banner) => ({
+      id: banner.id,
+      name: banner.name,
+      imageDesktopUrl: banner.image_desktop_url,
+      imageMobileUrl: banner.image_mobile_url,
+      headline: banner.headline,
+      copy: banner.copy,
+      ctaLabel: banner.cta_label,
+      ctaUrl: banner.cta_url,
+    }));
+}
 
-  if (!candidate) return null;
-  return {
-    id: candidate.id,
-    name: candidate.name,
-    imageDesktopUrl: candidate.image_desktop_url,
-    imageMobileUrl: candidate.image_mobile_url,
-    headline: candidate.headline,
-    copy: candidate.copy,
-    ctaLabel: candidate.cta_label,
-    ctaUrl: candidate.cta_url,
-  };
+/** @deprecated Usar `getActiveBanners` — retorna array para soporte de carousel. */
+export async function getActiveBanner(
+  supabase: DB,
+  position = "home",
+): Promise<BannerView | null> {
+  const banners = await getActiveBanners(supabase, position);
+  return banners[0] ?? null;
 }
 
 /**
@@ -207,8 +213,8 @@ async function resolveSection(
     }
     case "banner": {
       const position = (config.position as string) ?? "home";
-      const banner = await getActiveBanner(supabase, position);
-      return { ...base, banner };
+      const banners = await getActiveBanners(supabase, position);
+      return { ...base, banners };
     }
     case "hero":
     case "image_text":

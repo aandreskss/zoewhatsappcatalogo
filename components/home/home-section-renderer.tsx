@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { HomeSectionView } from "@/lib/domain/home";
 import { ProductCard } from "@/components/catalog/product-card";
 import { Button } from "@/components/ui/button";
+import { BannerCarousel } from "@/components/home/banner-carousel";
 
 /**
  * Renderiza un bloque ya resuelto (ver `lib/domain/home.ts`). Cada `case`
@@ -55,37 +56,8 @@ export function HomeSectionRenderer({
     }
 
     case "banner": {
-      if (!section.banner) return null;
-      const banner = section.banner;
-      return (
-        <section className="relative overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-muted)]">
-          {banner.imageDesktopUrl ? (
-            <div className="relative aspect-[21/9] w-full">
-              <Image
-                src={banner.imageDesktopUrl}
-                alt={banner.name}
-                fill
-                className="object-cover"
-              />
-            </div>
-          ) : null}
-          {(banner.headline || banner.ctaLabel) && (
-            <div className="flex flex-col items-start gap-2 p-6">
-              {banner.headline ? (
-                <h2 className="text-xl font-semibold">{banner.headline}</h2>
-              ) : null}
-              {banner.copy ? (
-                <p className="text-[var(--color-muted-foreground)]">{banner.copy}</p>
-              ) : null}
-              {banner.ctaLabel && banner.ctaUrl ? (
-                <Button asChild size="sm">
-                  <Link href={banner.ctaUrl}>{banner.ctaLabel}</Link>
-                </Button>
-              ) : null}
-            </div>
-          )}
-        </section>
-      );
+      if (!section.banners || section.banners.length === 0) return null;
+      return <BannerCarousel banners={section.banners} />;
     }
 
     case "categories": {
