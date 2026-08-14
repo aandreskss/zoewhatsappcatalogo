@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { AdminSessionUser } from "@/lib/auth/session";
@@ -74,8 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Logística",
     items: [
-      { href: "/admin/entrega/sucursales", label: "Sucursales", icon: Store },
-      { href: "/admin/entrega/pickup", label: "Retiro / Delivery", icon: MapPin },
+      { href: "/admin/entrega/pickup", label: "Retiro / Delivery", icon: Store },
       { href: "/admin/entrega/delivery", label: "Zonas de delivery", icon: MapPin },
       { href: "/admin/entrega/envios", label: "Envíos", icon: Truck },
       { href: "/admin/entrega/horarios", label: "Horarios", icon: Clock },
@@ -101,9 +100,20 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
-  const pathname = usePathname();
-  const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+function isActive(item: NavItem, pathname: string): boolean {
+  return item.exact ? pathname === item.href : pathname.startsWith(item.href);
+}
+
+function NavLink({
+  item,
+  pathname,
+  onClick,
+}: {
+  item: NavItem;
+  pathname: string;
+  onClick?: () => void;
+}) {
+  const active = isActive(item, pathname);
   const Icon = item.icon;
 
   return (
@@ -118,14 +128,20 @@ function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
     >
       <Icon size={16} strokeWidth={active ? 2.2 : 1.8} />
       {item.label}
-      {active && (
-        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#C9748A]" />
-      )}
+      {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#C9748A]" />}
     </Link>
   );
 }
 
-function Sidebar({ user, onClose }: { user: AdminSessionUser; onClose?: () => void }) {
+function Sidebar({
+  user,
+  pathname,
+  onClose,
+}: {
+  user: AdminSessionUser;
+  pathname: string;
+  onClose?: () => void;
+}) {
   const initials = user.email?.slice(0, 2).toUpperCase() ?? "ZO";
 
   return (
@@ -144,10 +160,7 @@ function Sidebar({ user, onClose }: { user: AdminSessionUser; onClose?: () => vo
           </p>
         </div>
         {onClose && (
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1 text-white/40 hover:text-white/80"
-          >
+          <button onClick={onClose} className="rounded-lg p-1 text-white/40 hover:text-white/80">
             <X size={18} />
           </button>
         )}
@@ -166,7 +179,12 @@ function Sidebar({ user, onClose }: { user: AdminSessionUser; onClose?: () => vo
             )}
             <div className="flex flex-col gap-0.5">
               {group.items.map((item) => (
-                <NavLink key={item.href} item={item} onClick={onClose} />
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                  onClick={onClose}
+                />
               ))}
             </div>
           </div>
@@ -184,7 +202,9 @@ function Sidebar({ user, onClose }: { user: AdminSessionUser; onClose?: () => vo
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-medium text-white/80">{user.email}</p>
             {user.roles.length > 0 && (
-              <p className="text-[10px] text-white/30 capitalize">{user.roles[0]?.replace("_", " ")}</p>
+              <p className="text-[10px] text-white/30 capitalize">
+                {user.roles[0]?.replace("_", " ")}
+              </p>
             )}
           </div>
         </div>
@@ -202,7 +222,7 @@ function Sidebar({ user, onClose }: { user: AdminSessionUser; onClose?: () => vo
   );
 }
 
-export function AdminShell({
+function AdminShellInner({
   user,
   children,
 }: {
@@ -212,16 +232,17 @@ export function AdminShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
-  // Calcular título de la sección activa
   const activeItem = NAV_GROUPS.flatMap((g) => g.items).find((item) =>
-    item.exact ? pathname === item.href : pathname.startsWith(item.href),
+    isActive(item, pathname),
   );
+  // Assign to a capitalized variable so React treats it as a component, not an HTML tag
+  const ActiveIcon = activeItem?.icon ?? null;
 
   return (
     <div className="flex min-h-screen bg-[#F4EFEc]">
       {/* Sidebar desktop */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-56 flex-col shadow-lg">
-        <Sidebar user={user} />
+        <Sidebar user={user} pathname={pathname} />
       </aside>
 
       {/* Sidebar mobile — overlay */}
@@ -232,7 +253,7 @@ export function AdminShell({
             onClick={() => setMobileOpen(false)}
           />
           <aside className="fixed inset-y-0 left-0 z-50 w-64 shadow-2xl md:hidden">
-            <Sidebar user={user} onClose={() => setMobileOpen(false)} />
+            <Sidebar user={user} pathname={pathname} onClose={() => setMobileOpen(false)} />
           </aside>
         </>
       )}
@@ -249,16 +270,10 @@ export function AdminShell({
           </button>
 
           <div className="flex flex-1 items-center gap-2">
-            {activeItem && (
+            {ActiveIcon && activeItem && (
               <>
-                <activeItem.icon
-                  size={16}
-                  className="text-[#C9748A]"
-                  strokeWidth={2}
-                />
-                <h1 className="text-sm font-semibold text-[#29252A]">
-                  {activeItem.label}
-                </h1>
+                <ActiveIcon size={16} className="text-[#C9748A]" strokeWidth={2} />
+                <h1 className="text-sm font-semibold text-[#29252A]">{activeItem.label}</h1>
               </>
             )}
           </div>
@@ -278,5 +293,19 @@ export function AdminShell({
         </main>
       </div>
     </div>
+  );
+}
+
+export function AdminShell({
+  user,
+  children,
+}: {
+  user: AdminSessionUser;
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense>
+      <AdminShellInner user={user}>{children}</AdminShellInner>
+    </Suspense>
   );
 }
