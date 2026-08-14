@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireAdminUser } from "@/lib/auth/session";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
 /**
@@ -31,24 +31,25 @@ export async function startMfaEnrollment(): Promise<EnrollStartResult> {
 
   const supabase = await createSupabaseServerClient();
 
-  // Limpia intentos de enrolamiento previos sin verificar (recargar esta
-  // pantalla, o cerrar la app de autenticación a mitad de camino, no debe
-  // acumular factores TOTP huérfanos cada vez que se visita esta página).
-  const { data: existingFactors } = await supabase.auth.mfa.listFactors();
-  const unverified = (existingFactors?.totp ?? []).filter((f) => f.status !== "verified");
-  for (const factor of unverified) {
-    await supabase.auth.mfa.unenroll({ factorId: factor.id });
-  }
+  // Usa el cliente admin para obtener todos los factores del usuario (incluyendo
+  // los no verificados, que el cliente regular a veces no devuelve en sesión AAL1).
+  const adminSupabase = createSupabaseServiceRoleClient();
+  const { data: userData } = await adminSupabase.auth.admin.getUserById(user.id);
+  const allFactors = userData?.user?.factors ?? [];
+  const unverifiedTotp = allFactors.filter(
+    (f) => f.factor_type === "totp" && f.status !== "verified",
+  );
+  await Promise.all(unverifiedTotp.map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })));
 
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
-    friendlyName: `${user.email ?? "admin"} · ${new Date().toISOString().slice(0, 10)}`,
+    friendlyName: `${user.email ?? "admin"}-${Date.now()}`,
   });
 
   if (error || !data) {
     return {
       ok: false,
-      error: `Error al iniciar 2FA: ${error?.message ?? "sin datos"} (status: ${error?.status ?? "?"})`,
+      error: "No se pudo iniciar el enrolamiento de 2FA. Intenta de nuevo.",
     };
   }
 
