@@ -1,18 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/components/cart/cart-context";
-import { SearchBox } from "@/components/layout/search-box";
 import { MobileMenu } from "@/components/layout/mobile-menu";
 
-/**
- * Header público (sección 6/28/29 del plan: desktop + mobile). El menú de
- * categorías completo vive en `MobileMenu` (drawer) en mobile y en un
- * `<nav>` inline en `sm:` en adelante — mismos datos (`categories`),
- * resueltos server-side en `app/(public)/layout.tsx` y pasados como prop
- * porque este componente ya era "use client" por `useCart()`.
- */
 export function SiteHeader({
   categories,
 }: {
@@ -20,41 +12,95 @@ export function SiteHeader({
 }) {
   const { itemCount } = useCart();
 
+  const leftLinks = [
+    { label: "Inicio", href: "/" },
+    { label: "Catálogo", href: "/catalogo" },
+    { label: "Tiendas", href: "/tiendas" },
+  ];
+
+  const rightLinks = categories.slice(0, 3).map((c) => ({
+    label: c.name,
+    href: `/categoria/${c.slug}`,
+  }));
+
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-background)]/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-        <MobileMenu categories={categories} />
-        <Link href="/" className="text-lg font-semibold">
-          Zoe
-        </Link>
-        <nav className="hidden items-center gap-4 text-sm sm:flex">
-          <Link href="/catalogo" className="hover:underline">
-            Catálogo
+    <header
+      className="fixed top-0 left-0 right-0 z-50"
+      style={{
+        backgroundColor: "rgba(255,253,252,0.92)",
+        backdropFilter: "blur(16px)",
+        borderBottom: "1px solid #ECE7EA",
+      }}
+    >
+      <div className="mx-auto max-w-[1440px] px-4 md:px-8 lg:px-12">
+        <div className="relative flex items-center justify-between h-14 md:h-16">
+          {/* Mobile: hamburger left */}
+          <MobileMenu categories={categories} />
+
+          {/* Desktop: nav left */}
+          <nav className="hidden md:flex items-center gap-7 flex-1">
+            {leftLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm font-medium text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors duration-150"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Logo — centered absolute */}
+          <Link
+            href="/"
+            className="absolute left-1/2 -translate-x-1/2 font-display text-2xl md:text-3xl tracking-wide text-[var(--color-foreground)]"
+          >
+            Zoe
           </Link>
-          {categories.slice(0, 4).map((category) => (
+
+          {/* Desktop: nav right */}
+          <nav className="hidden md:flex items-center gap-7 flex-1 justify-end">
+            {rightLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm font-medium text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors duration-150"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Icons right */}
+          <div className="flex items-center gap-1">
             <Link
-              key={category.slug}
-              href={`/categoria/${category.slug}`}
-              className="hover:underline"
+              href="/buscar"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[var(--color-rose-light)] transition-colors duration-150"
+              aria-label="Buscar"
             >
-              {category.name}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
             </Link>
-          ))}
-        </nav>
-        <div className="flex-1">
-          <SearchBox />
+            <Link
+              href="/carrito"
+              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-[var(--color-rose-light)] transition-colors duration-150"
+              aria-label={`Carrito${itemCount > 0 ? `, ${itemCount} productos` : ""}`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+              {itemCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-[9px] font-semibold flex items-center justify-center">
+                  {itemCount > 9 ? "9+" : itemCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/carrito" className="relative flex items-center gap-1">
-            <ShoppingBag className="size-5" aria-hidden />
-            <span className="sr-only">Carrito</span>
-            {itemCount > 0 ? (
-              <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-primary)] px-1 text-[10px] font-medium text-[var(--color-primary-foreground)]">
-                {itemCount}
-              </span>
-            ) : null}
-          </Link>
-        </nav>
       </div>
     </header>
   );

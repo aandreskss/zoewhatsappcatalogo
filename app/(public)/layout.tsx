@@ -35,7 +35,9 @@ export default async function PublicLayout({ children }: { children: React.React
         <ToastProvider>
           <ThirdPartyScripts integrations={integrations} />
           <SiteHeader categories={categories ?? []} />
-          {children}
+          <div className="pt-14 md:pt-16">
+            {children}
+          </div>
           <SiteFooter />
         </ToastProvider>
       </AnalyticsProvider>

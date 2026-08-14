@@ -1,60 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
 @import "tailwindcss";
 
-/*
- * Tokens del design system (sección 28 del plan).
- *
- * Estos son valores PLACEHOLDER neutrales para la Fase 0/1. El branding
- * real de Zoe (logo, paleta, tipografía) se carga desde
- * `Apariencia → Branding` en el admin (Fase 7) y sobrescribe estas
- * variables en runtime — ningún componente debe asumir estos valores
- * como si fueran "la marca Zoe" (regla: no hardcodear Zoe en código
- * genérico).
- */
 @theme {
-  --color-primary: oklch(0.32 0.09 280);
-  --color-primary-foreground: oklch(0.98 0 0);
-  --color-secondary: oklch(0.7 0.14 30);
-  --color-secondary-foreground: oklch(0.15 0 0);
-  --color-accent: oklch(0.75 0.16 90);
-  --color-background: oklch(1 0 0);
-  --color-foreground: oklch(0.15 0 0);
-  --color-muted: oklch(0.96 0 0);
-  --color-muted-foreground: oklch(0.45 0 0);
-  --color-border: oklch(0.9 0 0);
-  --color-success: oklch(0.6 0.15 145);
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --color-cream: #FFFDFC;
+  --color-ink: #29252A;
+  --color-beige: #EFE5DC;
+  --color-lavender: #EEE8F8;
+  --color-sage: #DDE8DF;
+  --color-rose-light: #F4D6DD;
+  --color-surface: #F7F4F2;
+
+  --color-primary: #C9748A;
+  --color-primary-foreground: #FFFDFC;
+  --color-secondary: #EEE8F8;
+  --color-secondary-foreground: #29252A;
+  --color-accent: #F4D6DD;
+  --color-background: #FFFDFC;
+  --color-foreground: #29252A;
+  --color-muted: #F7F4F2;
+  --color-muted-foreground: #777078;
+  --color-border: #ECE7EA;
+  --color-success: #5A9E6F;
   --color-warning: oklch(0.75 0.15 80);
-  --color-error: oklch(0.55 0.2 25);
+  --color-error: #C9748A;
 
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --shadow-sm: 0 1px 2px rgba(41, 37, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(41, 37, 42, 0.1);
+  --shadow-lg: 0 12px 32px rgba(41, 37, 42, 0.16);
 
-  /* Sombras (sección 28 del plan) — solo tres niveles; más granularidad no
-     tiene uso real en este catálogo (tarjetas, drawers/modales, y poco más). */
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.06);
-  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.1);
-  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.16);
-
-  /* Velocidad/curva de animación estándar (sección 28 del plan) — 150-250ms
-     para microinteracciones (agregar al carrito, drawers, filtros). */
   --transition-duration: 200ms;
   --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-/*
- * Breakpoints (sección 28 del plan): móvil pequeño ≤360px, móvil 361-639px,
- * tablet 640-1023px, laptop 1024-1279px, desktop grande ≥1280px. Se
- * documentan aquí en vez de redefinir los breakpoints de Tailwind
- * (`sm`/`md`/`lg`/`xl` = 640/768/1024/1280) porque ya coinciden con los
- * límites que pide el plan salvo por el corte "móvil pequeño" — cambiar los
- * valores por defecto de Tailwind reescribiría el comportamiento de TODO
- * componente ya construido con `sm:`/`md:`/`lg:` en las Fases 2-10, un
- * riesgo no justificado por una distinción que hoy no se usa en ningún
- * componente. Mapeo: móvil pequeño/móvil = sin prefijo, tablet = `sm:`,
- * laptop = `lg:`, desktop grande = `xl:`.
- */
 
 @layer base {
   * {
@@ -65,35 +50,28 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Animaciones de entrada para Drawer/Dialog (sección 28/29 del plan) —
-     `prefers-reduced-motion` las neutraliza vía la regla global de abajo
-     (pone `animation-duration` en ~0), no hace falta duplicar la condición
-     aquí. */
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
   @keyframes drawer-in-bottom {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
   }
   @keyframes drawer-in-side {
-    from {
-      transform: translateX(100%);
-    }
-    to {
-      transform: translateX(0);
-    }
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
   }
   @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   .animate-drawer-in-bottom {
     animation: drawer-in-bottom var(--transition-duration) var(--transition-ease);
@@ -105,11 +83,8 @@
     animation: fade-in var(--transition-duration) var(--transition-ease);
   }
 
-  /* Respeta a quienes prefieren menos movimiento (sección 28/119 del plan). */
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
