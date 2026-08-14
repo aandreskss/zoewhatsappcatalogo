@@ -29,6 +29,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "placehold.co",
       },
+      {
+        // Cloudinary como hosting de imágenes de producto (decisión del
+        // usuario) — el código ya guarda `image_url` como texto libre, así
+        // que cualquier URL https funciona; esto solo autoriza el dominio
+        // para que `next/image` la pueda optimizar en vez de rechazarla.
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
     ],
   },
   async headers() {

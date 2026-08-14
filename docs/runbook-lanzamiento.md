@@ -44,6 +44,48 @@ user` (nunca insertando una fila en una tabla de contraseñas propia —
    esperada por `lib/db/supabase/*` y `next.config.ts`
    (`images.remotePatterns` ya apunta a `*.supabase.co`).
 
+## 1a. Cloudinary (imágenes de producto)
+
+Decisión del usuario: las imágenes de producto se suben directo desde el
+navegador a Cloudinary ("unsigned upload"), no a Supabase Storage. El
+código ya guarda `product_images.url` como texto libre, así que esto es
+opcional — sin configurarlo, el admin sigue pudiendo pegar una URL de
+imagen a mano en `/admin/productos/[id]` exactamente como antes.
+
+1. Crea una cuenta en [cloudinary.com](https://cloudinary.com) (el plan
+   gratuito alcanza para un catálogo de este tamaño). Anota el **Cloud
+   name** que aparece en el dashboard.
+2. Ve a `Settings → Upload → Upload presets → Add upload preset`.
+3. Pon **Signing Mode: Unsigned** — es lo que permite subir desde el
+   navegador sin exponer ningún secreto del servidor. Anota el **nombre**
+   del preset.
+4. Recomendado (endurecer el preset, ya que cualquiera con el cloud name
+   + nombre del preset puede subir a esta cuenta mientras esté en modo
+   "Unsigned"):
+   - `Folder`: fija una carpeta fija (ej. `zoe-catalog`) para no mezclar
+     con otras subidas.
+   - `Allowed formats`: limita a `jpg,png,webp`.
+   - `Max file size`: pon un límite razonable (ej. 5 MB) desde
+     `Settings → Upload` (transformaciones/restricciones del preset).
+5. Define en `.env.local` (desarrollo) y en las variables de entorno de
+   Vercel (producción/preview):
+   ```
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=<tu cloud name>
+   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=<nombre del preset>
+   ```
+   Son variables **públicas a propósito** (van en el bundle del
+   navegador) — así funciona una subida "unsigned"; no son secretos.
+6. `next.config.ts` ya autoriza `res.cloudinary.com` en
+   `images.remotePatterns`, así que las imágenes subidas se optimizan
+   normal con `next/image` en el resto del sitio.
+
+Si en algún momento se necesita más control (borrar imágenes desde el
+código, transformaciones dinámicas, restringir quién sube), la migración
+natural es una subida firmada: un endpoint de servidor que firme la
+subida con el API secret de Cloudinary (nunca expuesto al navegador) en
+vez de depender solo del preset "Unsigned". No implementado — no hacía
+falta para el alcance actual.
+
 ## 2. Variables de entorno
 
 Completa `.env.local` (desarrollo) y las variables de entorno del
