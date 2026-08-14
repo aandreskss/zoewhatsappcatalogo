@@ -7,10 +7,6 @@ import { trackEvent } from "@/lib/domain/analytics";
 import { ProductGrid } from "@/components/catalog/product-grid";
 import { CatalogFiltersBar } from "@/components/catalog/catalog-filters-bar";
 
-// El catálogo cambia con cada publicación de producto; se revalida bajo
-// demanda desde el admin (Fase 7/8). Mientras tanto, un valor corto evita
-// servir datos completamente estáticos sin tener aún el webhook de
-// revalidación.
 export const revalidate = 60;
 
 type CatalogSearchParams = {
@@ -22,22 +18,13 @@ type CatalogSearchParams = {
   orden?: string;
 };
 
-/**
- * Indexabilidad de `/catalogo` con filtros (sección 22 del plan): la vista
- * base (sin filtros) y una única combinación categoría-o-marca son
- * indexables. Cualquier combinación de 2+ filtros, o una búsqueda (`q`,
- * cuyo contenido "canónico" ya vive en `/buscar`), se marca `noindex` para
- * no competir por posicionamiento con contenido casi duplicado.
- */
 export async function generateMetadata({
   searchParams,
 }: {
   searchParams: Promise<CatalogSearchParams>;
 }): Promise<Metadata> {
   const { categoria, marca, q, precio_min, precio_max } = await searchParams;
-  const activeFilterCount = [categoria, marca, q, precio_min, precio_max].filter(
-    Boolean,
-  ).length;
+  const activeFilterCount = [categoria, marca, q, precio_min, precio_max].filter(Boolean).length;
   const shouldNoindex = Boolean(q) || activeFilterCount > 1;
 
   return {
@@ -47,12 +34,6 @@ export async function generateMetadata({
   };
 }
 
-/**
- * Filtros persistentes (sección 8/46 del plan): categoría, marca, precio
- * y orden viven en la URL (`searchParams`), no en estado de cliente ni
- * cookies — así sobreviven a un refresh, son compartibles/bookmarkeables
- * y funcionan sin JavaScript.
- */
 export default async function CatalogoPage({
   searchParams,
 }: {
@@ -63,7 +44,7 @@ export default async function CatalogoPage({
 
   const sort = orden === "precio_asc" || orden === "precio_desc" ? orden : "recientes";
 
-  const [products, vesRate, sessionId] = await Promise.all([
+  const [products, vesRate, sessionId, categoriesResult] = await Promise.all([
     listPublishedProducts(supabase, {
       categorySlug: categoria,
       brandSlug: marca,
@@ -75,14 +56,16 @@ export default async function CatalogoPage({
     }),
     getVesReferenceRate(supabase),
     getCartSessionId(),
+    supabase.from("categories").select("name, slug").eq("active", true).order("order").limit(12),
   ]);
 
-  // `filter_applied` solo cuando el visitante realmente aplicó un filtro
-  // de precio/orden (no en la vista base del catálogo) — igual que en
-  // /buscar y /categoria, solo si ya existe cookie de sesión.
-  const hasActiveFilter = Boolean(
-    precio_min || precio_max || (orden && orden !== "recientes"),
-  );
+  const categories = categoriesResult.data ?? [];
+
+  const activeCategory = categoria
+    ? (categories.find((c) => c.slug === categoria)?.name ?? null)
+    : null;
+
+  const hasActiveFilter = Boolean(precio_min || precio_max || (orden && orden !== "recientes"));
   if (sessionId && hasActiveFilter) {
     void trackEvent({
       eventType: "filter_applied",
@@ -100,14 +83,56 @@ export default async function CatalogoPage({
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold">Catálogo</h1>
-      <CatalogFiltersBar
-        current={{ categoria, marca, q, precio_min, precio_max, orden: sort }}
-      />
-      <div className="mt-4">
-        <ProductGrid products={products} vesRate={vesRate?.rate ?? null} />
+    <div className="bg-[var(--color-background)]">
+      {/* Page header */}
+      <div className="border-b border-[var(--color-border)] px-6 py-8 md:px-12">
+        <div className="mx-auto max-w-[1440px]">
+          {q ? (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted-foreground)] mb-1">
+                Búsqueda
+              </p>
+              <h1 className="font-display text-3xl md:text-4xl text-[var(--color-foreground)]">
+                &ldquo;{q}&rdquo;
+              </h1>
+            </>
+          ) : activeCategory ? (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted-foreground)] mb-1">
+                Categoría
+              </p>
+              <h1 className="font-display text-3xl md:text-4xl text-[var(--color-foreground)]">
+                {activeCategory}
+              </h1>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted-foreground)] mb-1">
+                Colección SS 2025
+              </p>
+              <h1 className="font-display text-3xl md:text-4xl text-[var(--color-foreground)]">
+                Catálogo completo
+              </h1>
+            </>
+          )}
+          <p className="mt-2 text-sm text-[var(--color-muted-foreground)]">
+            {products.length} {products.length === 1 ? "modelo" : "modelos"}
+          </p>
+        </div>
       </div>
-    </main>
+
+      <main className="mx-auto max-w-[1440px] px-6 py-6 md:px-12">
+        {/* Filters */}
+        <div className="mb-6">
+          <CatalogFiltersBar
+            current={{ categoria, marca, q, precio_min, precio_max, orden: sort }}
+            categories={categories}
+          />
+        </div>
+
+        {/* Grid */}
+        <ProductGrid products={products} vesRate={vesRate?.rate ?? null} />
+      </main>
+    </div>
   );
 }
