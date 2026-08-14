@@ -962,6 +962,49 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["size_charts"]["Row"]>;
         Relationships: [];
       };
+      customer_tags: {
+        Row: {
+          id: string;
+          name: string;
+          color: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["customer_tags"]["Row"]> & {
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["customer_tags"]["Row"]>;
+        Relationships: [];
+      };
+      customer_tag_assignments: {
+        Row: {
+          customer_id: string;
+          tag_id: string;
+          assigned_at: string;
+          assigned_by: string | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["customer_tag_assignments"]["Row"]> & {
+          customer_id: string;
+          tag_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["customer_tag_assignments"]["Row"]>;
+        Relationships: [];
+      };
+      customer_notes: {
+        Row: {
+          id: string;
+          customer_id: string;
+          user_id: string | null;
+          note: string;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["customer_notes"]["Row"]> & {
+          customer_id: string;
+          note: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["customer_notes"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       variant_availability: {

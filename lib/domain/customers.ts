@@ -29,7 +29,7 @@ export const CUSTOMER_SEGMENT_VARIANT: Record<CustomerSegment, SegmentBadgeVaria
   sin_pedidos: "muted",
 };
 
-interface SegmentInput {
+export interface SegmentInput {
   orders_count:    number;
   total_spent_usd: number;
   last_order_at:   string | null;
