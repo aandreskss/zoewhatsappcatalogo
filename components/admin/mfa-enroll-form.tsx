@@ -63,16 +63,11 @@ export function MfaEnrollForm() {
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="factorId" value={enrollment.factorId} />
 
-      {/* `<img>` normal a propósito, no `next/image`: es un data URI SVG
-          generado en cada carga de esta pantalla (nunca el mismo archivo
-          dos veces), así que no hay nada que `next/image` pueda optimizar
-          u cachear — y usarlo como `src` (patrón recomendado por Supabase)
-          evita además inyectar el SVG como HTML vía `dangerouslySetInnerHTML`. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={`data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(enrollment.qrCodeSvg)))}`}
-        alt="Código QR para activar la verificación en dos pasos"
-        className="mx-auto h-48 w-48"
+      {/* SVG de Supabase: QR generado sin scripts ni recursos externos — seguro inyectar directo */}
+      <div
+        dangerouslySetInnerHTML={{ __html: enrollment.qrCodeSvg }}
+        aria-label="Código QR para activar la verificación en dos pasos"
+        className="mx-auto h-48 w-48 [&>svg]:h-full [&>svg]:w-full"
       />
 
       <div className="flex flex-col gap-1 text-center">
