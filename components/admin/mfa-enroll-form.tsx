@@ -67,7 +67,7 @@ export function MfaEnrollForm() {
       <div
         dangerouslySetInnerHTML={{ __html: enrollment.qrCodeSvg }}
         aria-label="Código QR para activar la verificación en dos pasos"
-        className="mx-auto h-48 w-48 [&>svg]:h-full [&>svg]:w-full"
+        className="mx-auto [&>svg]:block [&>svg]:w-56 [&>svg]:h-56"
       />
 
       <div className="flex flex-col gap-1 text-center">
