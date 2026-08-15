@@ -64,7 +64,7 @@ export default async function FinaIntegrationPage() {
               Las sucursales y el costo se detectan automáticamente.
             </p>
           </div>
-          <FinaNativoImportForm />
+          <FinaNativoImportForm stores={stores ?? []} />
         </div>
       </div>
 

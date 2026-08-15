@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type {
@@ -16,7 +17,19 @@ import type {
   FinaNativoRowResult,
 } from "@/app/api/admin/import/fina-nativo/route";
 
-export function FinaNativoImportForm() {
+interface Store {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface Props {
+  stores: Store[];
+}
+
+const ACCEPTED = ".csv,.xlsx,.xlsm,.xls";
+
+export function FinaNativoImportForm({ stores }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -24,10 +37,13 @@ export function FinaNativoImportForm() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FinaNativoImportResponse | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [createMissing, setCreateMissing] = useState(false);
+  const [fallbackStoreId, setFallbackStoreId] = useState("");
 
   function handleFile(f: File) {
-    if (!f.name.endsWith(".csv")) {
-      setError("El archivo debe ser un CSV (.csv)");
+    const ext = f.name.split(".").pop()?.toLowerCase();
+    if (!["csv", "xlsx", "xlsm", "xls"].includes(ext ?? "")) {
+      setError("El archivo debe ser CSV, XLSX, XLSM o XLS");
       return;
     }
     setFile(f);
@@ -43,14 +59,15 @@ export function FinaNativoImportForm() {
   }
 
   async function handleImport() {
-    if (!file) { setError("Selecciona un archivo CSV"); return; }
-
+    if (!file) { setError("Selecciona un archivo"); return; }
     setError(null);
     setLoading(true);
     setResult(null);
 
     const form = new FormData();
     form.append("file", file);
+    form.append("create_missing", String(createMissing));
+    if (fallbackStoreId) form.append("fallback_store_id", fallbackStoreId);
 
     try {
       const res = await fetch("/api/admin/import/fina-nativo", { method: "POST", body: form });
@@ -67,13 +84,14 @@ export function FinaNativoImportForm() {
 
   const statusIcon = (r: FinaNativoRowResult) => {
     if (r.status === "updated") return <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />;
-    if (r.status === "not_found" || r.status === "skipped")
-      return <AlertCircle size={13} className="text-amber-500 shrink-0" />;
+    if (r.status === "created") return <PlusCircle size={13} className="text-[#7B1847] shrink-0" />;
+    if (r.status === "not_found" || r.status === "skipped") return <AlertCircle size={13} className="text-amber-500 shrink-0" />;
     return <XCircle size={13} className="text-red-500 shrink-0" />;
   };
 
   const statusLabel = (r: FinaNativoRowResult) => {
     if (r.status === "updated") return "Actualizado";
+    if (r.status === "created") return "Creado";
     if (r.status === "not_found") return "No encontrado";
     if (r.status === "skipped") return "Omitido";
     return "Error";
@@ -84,22 +102,16 @@ export function FinaNativoImportForm() {
       {/* Format info */}
       <div className="flex gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
         <Info size={14} className="mt-0.5 shrink-0 text-blue-500" />
-        <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold text-blue-800">Formato nativo de Fina</p>
-          <p className="text-xs text-blue-700">
-            Exporta directamente desde <strong>Fina → Inventario → Exportar CSV</strong>. El archivo
-            debe tener columnas <code className="rounded bg-blue-100 px-1">Tipo</code>,{" "}
-            <code className="rounded bg-blue-100 px-1">Nombre</code> y las columnas de sucursales
-            como <code className="rounded bg-blue-100 px-1">sede il duomo</code> y{" "}
-            <code className="rounded bg-blue-100 px-1">av bolivar</code>. Las tiendas se detectan
-            automáticamente por nombre.
-          </p>
-        </div>
+        <p className="text-xs text-blue-700">
+          Exporta desde <strong>Fina → Inventario → Exportar</strong>. Acepta{" "}
+          <strong>CSV, XLSX, XLSM y XLS</strong>. Las columnas de sucursales
+          (ej. <em>sede il duomo</em>, <em>av bolivar</em>) se detectan automáticamente por nombre.
+        </p>
       </div>
 
       {/* Upload zone */}
       <div className="flex flex-col gap-1.5">
-        <p className="text-sm font-medium text-[#29252A]">Archivo CSV de Fina</p>
+        <p className="text-sm font-medium text-[#29252A]">Archivo</p>
         {file ? (
           <div className="flex items-center justify-between rounded-xl border border-[#EBE4E1] bg-[#F4EFEc] px-4 py-3">
             <div>
@@ -122,30 +134,77 @@ export function FinaNativoImportForm() {
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
             className={`flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors focus:outline-none ${
-              dragging
-                ? "border-[#7B1847] bg-[#7B1847]/5"
-                : "border-[#EBE4E1] hover:border-[#7B1847]/40 hover:bg-[#F4EFEc]"
+              dragging ? "border-[#7B1847] bg-[#7B1847]/5" : "border-[#EBE4E1] hover:border-[#7B1847]/40 hover:bg-[#F4EFEc]"
             }`}
           >
             <Upload size={20} className="text-[#7B1847]" />
             <p className="text-sm font-medium text-[#29252A]">Arrastra o haz clic para subir</p>
-            <p className="text-xs text-[#29252A]/40">
-              Exportado desde Fina → Inventario → CSV
-            </p>
+            <p className="text-xs text-[#29252A]/40">CSV · XLSX · XLSM · XLS</p>
           </button>
         )}
         <input
           ref={inputRef}
           type="file"
-          accept=".csv,text/csv"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            e.target.value = "";
-            if (f) handleFile(f);
-          }}
+          accept={ACCEPTED}
+          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) handleFile(f); }}
           className="hidden"
         />
       </div>
+
+      {/* Fallback store selector */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-[#29252A]" htmlFor="fallback-store">
+          Tienda destino
+          <span className="ml-1.5 text-xs font-normal text-[#29252A]/40">
+            (solo si el archivo no tiene columnas por sucursal)
+          </span>
+        </label>
+        <select
+          id="fallback-store"
+          value={fallbackStoreId}
+          onChange={(e) => setFallbackStoreId(e.target.value)}
+          className="rounded-xl border border-[#EBE4E1] bg-white px-3 py-2 text-sm text-[#29252A] focus:outline-none focus:ring-2 focus:ring-[#7B1847]/30"
+        >
+          <option value="">Detectar automáticamente desde el archivo</option>
+          {stores.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}{s.code ? ` (${s.code})` : ""}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-[#29252A]/40">
+          Si el archivo tiene columnas por tienda, esta opción se ignora y se usan las del archivo.
+        </p>
+      </div>
+
+      {/* Create missing toggle */}
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#EBE4E1] bg-white px-4 py-3 transition-colors hover:border-[#7B1847]/30">
+        <input
+          type="checkbox"
+          checked={createMissing}
+          onChange={(e) => setCreateMissing(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-[#7B1847]"
+        />
+        <div>
+          <p className="text-sm font-semibold text-[#29252A]">Crear productos que no existan</p>
+          <p className="mt-0.5 text-xs text-[#29252A]/50">
+            Si un producto del archivo no está en el catálogo de Zoe, se creará automáticamente en
+            estado <strong>borrador</strong> con todas sus tallas y stock. Solo faltará agregar
+            imágenes y precio de venta.
+          </p>
+        </div>
+      </label>
+
+      {createMissing && (
+        <div className="flex gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <AlertCircle size={14} className="mt-0.5 shrink-0 text-amber-500" />
+          <p className="text-xs text-amber-800">
+            Los productos nuevos se crearán con <strong>precio de venta $0</strong>. Actualiza el
+            precio desde <strong>Admin → Productos</strong> antes de publicarlos. El costo se importa
+            tal como está en Fina.
+          </p>
+        </div>
+      )}
 
       {error && (
         <p className="flex items-start gap-1.5 text-sm text-red-600">
@@ -155,18 +214,16 @@ export function FinaNativoImportForm() {
       )}
 
       <Button type="button" onClick={handleImport} disabled={loading || !file} className="self-start">
-        {loading ? "Importando…" : "Importar inventario Fina"}
+        {loading ? "Importando…" : "Importar desde Fina"}
       </Button>
 
-      {/* Detected stores banner */}
+      {/* Post-import: detected stores */}
       {result && result.detectedStores.length > 0 && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5">
-          <p className="text-xs font-semibold text-emerald-800">Tiendas detectadas en el CSV</p>
+          <p className="text-xs font-semibold text-emerald-800">Tiendas asignadas</p>
           <ul className="mt-1 flex flex-col gap-0.5">
             {result.detectedStores.map((s) => (
-              <li key={s} className="text-xs text-emerald-700">
-                {s}
-              </li>
+              <li key={s} className="text-xs text-emerald-700">{s}</li>
             ))}
           </ul>
         </div>
@@ -174,12 +231,10 @@ export function FinaNativoImportForm() {
 
       {result && result.detectedStores.length === 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
-          <p className="text-xs font-semibold text-amber-800">
-            No se detectaron columnas de tiendas en el CSV
-          </p>
+          <p className="text-xs font-semibold text-amber-800">Sin tienda asignada</p>
           <p className="mt-0.5 text-xs text-amber-700">
-            Asegúrate de que las columnas del CSV coincidan con los nombres de tus sucursales activas
-            en Zoe.
+            No se detectaron columnas de tienda en el archivo y no se seleccionó tienda de respaldo.
+            El inventario no fue actualizado. Selecciona una tienda destino e importa nuevamente.
           </p>
         </div>
       )}
@@ -187,27 +242,37 @@ export function FinaNativoImportForm() {
       {/* Summary */}
       {result && (
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-5 gap-2">
             {[
               { label: "Actualizados", value: result.updated, color: "text-emerald-600" },
+              { label: "Creados", value: result.created, color: "text-[#7B1847]" },
               { label: "No encontrados", value: result.notFound, color: "text-amber-600" },
-              { label: "Omitidos", value: result.skipped, color: "text-[#29252A]/50" },
+              { label: "Omitidos", value: result.skipped, color: "text-[#29252A]/40" },
               { label: "Errores", value: result.errors, color: "text-red-600" },
             ].map((s) => (
               <div key={s.label} className="rounded-xl border border-[#EBE4E1] bg-white p-3 text-center">
-                <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-[#29252A]/50">{s.label}</p>
+                <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-[10px] leading-tight text-[#29252A]/50">{s.label}</p>
               </div>
             ))}
           </div>
 
-          {result.notFound > 0 && (
+          {result.notFound > 0 && !createMissing && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
               <p className="text-xs text-amber-800">
-                <strong>{result.notFound}</strong> variante(s) no encontradas en el catálogo de Zoe.
-                Revisa que el SKU del producto en Zoe siga el formato{" "}
-                <code className="rounded bg-amber-100 px-1">CODIGO-TALLA</code> (ej.{" "}
+                <strong>{result.notFound}</strong> variante(s) no se encontraron en el catálogo.
+                Activa <strong>"Crear productos que no existan"</strong> para importarlos automáticamente,
+                o verifica que los SKUs sigan el formato <code className="rounded bg-amber-100 px-1">CODIGO-TALLA</code> (ej.{" "}
                 <code className="rounded bg-amber-100 px-1">T1292R-37</code>).
+              </p>
+            </div>
+          )}
+
+          {result.created > 0 && (
+            <div className="rounded-xl border border-[#F0D8E8] bg-[#FDF8FB] px-4 py-2.5">
+              <p className="text-xs text-[#7B1847]">
+                <strong>{result.created}</strong> variante(s) creadas en estado borrador. Ve a{" "}
+                <strong>Admin → Productos</strong> para agregar imágenes y establecer el precio de venta.
               </p>
             </div>
           )}
@@ -228,17 +293,17 @@ export function FinaNativoImportForm() {
                   <tr>
                     <th className="px-3 py-2 text-left font-semibold text-[#29252A]/60">Producto</th>
                     <th className="px-3 py-2 text-left font-semibold text-[#29252A]/60">Talla</th>
-                    <th className="px-3 py-2 text-left font-semibold text-[#29252A]/60">SKU buscado</th>
+                    <th className="px-3 py-2 text-left font-semibold text-[#29252A]/60">SKU</th>
                     <th className="px-3 py-2 text-left font-semibold text-[#29252A]/60">Tiendas</th>
                     <th className="px-3 py-2 text-left font-semibold text-[#29252A]/60">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {result.results.map((r, i) => (
-                    <tr key={i} className="border-t border-[#EBE4E1] bg-white">
+                    <tr key={i} className={`border-t border-[#EBE4E1] ${r.status === "created" ? "bg-[#FDF8FB]" : "bg-white"}`}>
                       <td className="px-3 py-2 font-medium text-[#29252A]">{r.item}</td>
                       <td className="px-3 py-2 text-[#29252A]/70">{r.size}</td>
-                      <td className="px-3 py-2 font-mono text-[#29252A]/50">{r.candidateSku}</td>
+                      <td className="px-3 py-2 font-mono text-[10px] text-[#29252A]/50">{r.candidateSku}</td>
                       <td className="px-3 py-2">
                         {r.storeResults && r.storeResults.length > 0 ? (
                           <div className="flex flex-col gap-0.5">
@@ -246,7 +311,7 @@ export function FinaNativoImportForm() {
                               <span key={sr.storeName} className="text-[#29252A]/60">
                                 {sr.storeName.split(" ").slice(0, 2).join(" ")}:{" "}
                                 <span className="font-semibold text-[#29252A]">{sr.newQty}</span>
-                                {sr.previousQty !== sr.newQty && (
+                                {sr.previousQty !== sr.newQty && sr.previousQty > 0 && (
                                   <span className="text-[#29252A]/40"> (antes {sr.previousQty})</span>
                                 )}
                               </span>
@@ -259,11 +324,14 @@ export function FinaNativoImportForm() {
                       <td className="px-3 py-2">
                         <span className="flex items-center gap-1">
                           {statusIcon(r)}
-                          <span>{statusLabel(r)}</span>
-                          {r.message && (
-                            <span className="text-[#29252A]/40" title={r.message}>
-                              ⓘ
-                            </span>
+                          <span className={r.status === "created" ? "font-semibold text-[#7B1847]" : ""}>
+                            {statusLabel(r)}
+                          </span>
+                          {r.message && r.status === "not_found" && (
+                            <span className="text-[#29252A]/30" title={r.message}>ⓘ</span>
+                          )}
+                          {r.message && r.status === "error" && (
+                            <span className="text-red-500" title={r.message}>ⓘ</span>
                           )}
                         </span>
                       </td>
