@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { FinaExportForm } from "@/components/admin/fina-export-form";
 import { FinaImportForm } from "@/components/admin/fina-import-form";
+import { FinaNativoImportForm } from "@/components/admin/fina-nativo-import-form";
 import { Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -46,21 +47,45 @@ export default async function FinaIntegrationPage() {
           <FinaExportForm />
         </div>
 
-        {/* Import card */}
-        <div className="rounded-2xl border border-[#EBE4E1] bg-white p-6">
+        {/* Import native Fina format card */}
+        <div className="rounded-2xl border border-[#7B1847]/20 bg-white p-6">
           <div className="mb-5">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+              <span className="rounded-full bg-[#F0D8E8] px-2.5 py-0.5 text-xs font-semibold text-[#7B1847]">
                 Fina → Zoe
               </span>
+              <span className="rounded-full bg-[#7B1847] px-2.5 py-0.5 text-xs font-semibold text-white">
+                Formato nativo
+              </span>
             </div>
-            <h2 className="mt-2 text-base font-bold text-[#29252A]">Importar inventario</h2>
+            <h2 className="mt-2 text-base font-bold text-[#29252A]">Importar inventario desde Fina</h2>
             <p className="mt-1 text-sm text-[#29252A]/50">
-              Sube un CSV exportado desde Fina para actualizar el stock de tus productos en masa. Elige si manejas un solo almacén o divides por sucursal.
+              Sube el CSV exportado directamente desde Fina con formato jerárquico (Item / Variación).
+              Las sucursales y el costo se detectan automáticamente.
             </p>
           </div>
-          <FinaImportForm stores={stores ?? []} />
+          <FinaNativoImportForm />
         </div>
+      </div>
+
+      {/* Import custom format card */}
+      <div className="rounded-2xl border border-[#EBE4E1] bg-white p-6">
+        <div className="mb-5">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+              Fina → Zoe
+            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+              Formato personalizado
+            </span>
+          </div>
+          <h2 className="mt-2 text-base font-bold text-[#29252A]">Importar inventario (CSV plano)</h2>
+          <p className="mt-1 text-sm text-[#29252A]/50">
+            Importa con un CSV simple de columnas <code className="rounded bg-[#F4EFEc] px-1">sku, cantidad</code>.
+            Útil para ajustes manuales o archivos preparados a mano.
+          </p>
+        </div>
+        <FinaImportForm stores={stores ?? []} />
       </div>
 
       {/* Help section */}
