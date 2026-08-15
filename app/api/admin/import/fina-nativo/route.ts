@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { revalidatePath } from "next/cache";
 import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getAdminSessionUser } from "@/lib/auth/session";
 
@@ -326,7 +327,9 @@ export async function POST(request: Request) {
 
   for (const group of groups) {
     const parentSku = group.itemSku.trim().toUpperCase();
-    const parentNombre = group.itemNombre.trim().toUpperCase();
+    // Keep original casing for the display name; uppercase only for lookups/SKU building
+    const parentNombreRaw = group.itemNombre.trim();
+    const parentNombre = parentNombreRaw.toUpperCase();
     const itemKey = parentSku || parentNombre;
     if (!itemKey) continue;
 
@@ -496,8 +499,8 @@ export async function POST(request: Request) {
               optionId = newOpt.id;
             }
           } else {
-            // Create new product
-            const productName = parentSku || parentNombre;
+            // Create new product — use the original name from Fina, fall back to SKU
+            const productName = parentNombreRaw || parentSku;
             const baseSlug = slugify(productName);
             let slug = baseSlug;
             const { data: slugCheck } = await service
@@ -608,10 +611,16 @@ export async function POST(request: Request) {
     }
   }
 
+  const createdCount = results.filter((r) => r.status === "created").length;
+  if (createdCount > 0) {
+    revalidatePath("/admin/productos");
+    revalidatePath("/admin/inventario");
+  }
+
   return NextResponse.json({
     total: results.length,
     updated: results.filter((r) => r.status === "updated").length,
-    created: results.filter((r) => r.status === "created").length,
+    created: createdCount,
     notFound: results.filter((r) => r.status === "not_found").length,
     skipped: results.filter((r) => r.status === "skipped").length,
     errors: results.filter((r) => r.status === "error").length,

@@ -311,14 +311,20 @@ export function FinaNativoImportForm({ stores }: Props) {
           )}
 
           {result.created > 0 && (
-            <div className="rounded-xl border border-[#F0D8E8] bg-[#FDF8FB] px-4 py-2.5">
-              <p className="text-xs text-[#7B1847]">
-                <strong>{result.created}</strong> variante(s) creadas en borrador. Ve a{" "}
-                <a href="/admin/productos" className="underline hover:text-[#7B1847]/70">
-                  Admin → Productos
-                </a>{" "}
-                para agregar imágenes y ajustar el precio de venta antes de publicar.
+            <div className="rounded-xl border border-[#F0D8E8] bg-[#FDF8FB] px-4 py-3">
+              <p className="text-xs font-semibold text-[#7B1847]">
+                {result.created} variante(s) nuevas creadas en borrador
               </p>
+              <p className="mt-1 text-xs text-[#7B1847]/70">
+                Los productos se guardaron con estado <strong>Borrador</strong>. Agrégales imágenes
+                y revisa el precio de venta antes de publicarlos.
+              </p>
+              <a
+                href="/admin/productos?estado=draft"
+                className="mt-2.5 inline-flex items-center gap-1 rounded-lg bg-[#7B1847] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#7B1847]/80"
+              >
+                Ver nuevos productos en borrador →
+              </a>
             </div>
           )}
 
