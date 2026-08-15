@@ -259,7 +259,7 @@ export function FinaNativoImportForm({ stores }: Props) {
                   {col}
                 </span>
                 <a
-                  href="/admin/entrega/pickup"
+                  href="/admin/entrega/sucursales"
                   className="flex items-center gap-0.5 text-amber-700 underline hover:text-amber-900"
                 >
                   Crear sucursal <ExternalLink size={10} />
