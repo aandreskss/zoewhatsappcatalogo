@@ -69,6 +69,46 @@ export async function updateCostAction(
   return { error: null };
 }
 
+export async function deleteProductFromInventoryAction(
+  productId: string,
+): Promise<{ error: string | null }> {
+  await requireAdminUser(["super_admin", "admin"]);
+
+  const parsed = z.string().uuid().safeParse(productId);
+  if (!parsed.success) return { error: "ID inválido" };
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("products")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", productId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/inventario");
+  revalidatePath("/admin/productos");
+  return { error: null };
+}
+
+export async function deleteVariantAction(
+  variantId: string,
+): Promise<{ error: string | null }> {
+  await requireAdminUser(["super_admin", "admin", "inventory"]);
+
+  const parsed = z.string().uuid().safeParse(variantId);
+  if (!parsed.success) return { error: "ID inválido" };
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("product_variants")
+    .update({ status: "inactive" })
+    .eq("id", variantId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/inventario");
+  revalidatePath("/admin/productos");
+  return { error: null };
+}
+
 export async function getMovementsAction(variantId: string): Promise<{
   data: {
     id: string;

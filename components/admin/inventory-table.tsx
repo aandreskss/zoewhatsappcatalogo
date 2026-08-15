@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Search, History, X, AlertCircle, Check } from "lucide-react";
+import { Search, History, X, AlertCircle, Check, Trash2 } from "lucide-react";
 import {
   updateInventoryAction,
   updateCostAction,
   getMovementsAction,
+  deleteVariantAction,
+  deleteProductFromInventoryAction,
 } from "@/app/admin/(protected)/inventario/actions";
 
 export interface VariantRow {
@@ -187,12 +189,8 @@ function MovementsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 flex w-full max-w-2xl flex-col rounded-2xl border border-[#EBE4E1] bg-white shadow-2xl">
-        {/* Header */}
         <div className="flex items-start justify-between border-b border-[#EBE4E1] px-5 py-4">
           <div>
             <p className="font-semibold text-[#29252A]">Historial de movimientos</p>
@@ -205,8 +203,6 @@ function MovementsModal({
             <X size={16} />
           </button>
         </div>
-
-        {/* Body */}
         <div className="max-h-[28rem] overflow-y-auto">
           {!movements && !error && (
             <div className="flex justify-center py-10">
@@ -220,64 +216,37 @@ function MovementsModal({
             </div>
           )}
           {movements && movements.length === 0 && (
-            <p className="py-10 text-center text-sm text-[#29252A]/40">
-              Sin movimientos registrados
-            </p>
+            <p className="py-10 text-center text-sm text-[#29252A]/40">Sin movimientos registrados</p>
           )}
           {movements && movements.length > 0 && (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#EBE4E1] bg-[#F4EFEc]">
-                  <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                    Fecha
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                    Tipo
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                    Sucursal
-                  </th>
-                  <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                    Δ
-                  </th>
-                  <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                    Antes → Después
-                  </th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Fecha</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Tipo</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Sucursal</th>
+                  <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Δ</th>
+                  <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Antes → Después</th>
                 </tr>
               </thead>
               <tbody>
                 {movements.map((m) => (
-                  <tr
-                    key={m.id}
-                    className="border-t border-[#EBE4E1] transition-colors hover:bg-[#F4EFEc]/50"
-                  >
+                  <tr key={m.id} className="border-t border-[#EBE4E1] transition-colors hover:bg-[#F4EFEc]/50">
                     <td className="px-4 py-2.5 text-xs text-[#29252A]/60">
                       {new Date(m.created_at).toLocaleDateString("es-VE", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
+                        day: "2-digit", month: "short", year: "numeric",
+                        hour: "2-digit", minute: "2-digit",
                       })}
                     </td>
                     <td className="px-4 py-2.5">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${TYPE_COLOR[m.type] ?? "bg-gray-100 text-gray-600"}`}
-                      >
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${TYPE_COLOR[m.type] ?? "bg-gray-100 text-gray-600"}`}>
                         {TYPE_LABEL[m.type] ?? m.type}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-[#29252A]/60">
-                      {m.stores?.name ?? "—"}
-                    </td>
+                    <td className="px-4 py-2.5 text-xs text-[#29252A]/60">{m.stores?.name ?? "—"}</td>
                     <td className="px-4 py-2.5 text-right text-sm tabular-nums font-semibold">
-                      <span
-                        className={
-                          m.quantity_delta >= 0 ? "text-emerald-700" : "text-red-600"
-                        }
-                      >
-                        {m.quantity_delta >= 0 ? "+" : ""}
-                        {m.quantity_delta}
+                      <span className={m.quantity_delta >= 0 ? "text-emerald-700" : "text-red-600"}>
+                        {m.quantity_delta >= 0 ? "+" : ""}{m.quantity_delta}
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-right text-xs tabular-nums text-[#29252A]/50">
@@ -304,12 +273,20 @@ export function InventoryTable({
 }) {
   const [search, setSearch] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
-  const [modalVariant, setModalVariant] = useState<{
-    variantId: string;
-    label: string;
-  } | null>(null);
-  // Tracks quantities saved during this session so the Total column updates live
+  const [modalVariant, setModalVariant] = useState<{ variantId: string; label: string } | null>(null);
+
+  // Live stock overrides so the Total column updates without a page reload
   const [stockOverrides, setStockOverrides] = useState<Map<string, number>>(new Map());
+
+  // Variant-level delete
+  const [confirmDeleteVariantId, setConfirmDeleteVariantId] = useState<string | null>(null);
+  const [deletingVariantId, setDeletingVariantId] = useState<string | null>(null);
+  const [deletedVariantIds, setDeletedVariantIds] = useState<Set<string>>(new Set());
+
+  // Product-level delete
+  const [confirmDeleteProductId, setConfirmDeleteProductId] = useState<string | null>(null);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [deletedProductIds, setDeletedProductIds] = useState<Set<string>>(new Set());
 
   function handleStockSaved(variantId: string, storeId: string, newQty: number) {
     setStockOverrides((prev) => {
@@ -323,16 +300,32 @@ export function InventoryTable({
     let total = 0;
     for (const store of stores) {
       const key = `${row.variantId}:${store.id}`;
-      total += stockOverrides.has(key)
-        ? stockOverrides.get(key)!
-        : (row.stockByStore[store.id] ?? 0);
+      total += stockOverrides.has(key) ? stockOverrides.get(key)! : (row.stockByStore[store.id] ?? 0);
     }
     return total;
+  }
+
+  async function handleDeleteVariant(variantId: string) {
+    setDeletingVariantId(variantId);
+    const result = await deleteVariantAction(variantId);
+    setDeletingVariantId(null);
+    setConfirmDeleteVariantId(null);
+    if (!result.error) setDeletedVariantIds((prev) => new Set(prev).add(variantId));
+  }
+
+  async function handleDeleteProduct(productId: string) {
+    setDeletingProductId(productId);
+    const result = await deleteProductFromInventoryAction(productId);
+    setDeletingProductId(null);
+    setConfirmDeleteProductId(null);
+    if (!result.error) setDeletedProductIds((prev) => new Set(prev).add(productId));
   }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return rows.filter((r) => {
+      if (deletedVariantIds.has(r.variantId)) return false;
+      if (deletedProductIds.has(r.productId)) return false;
       if (lowStockOnly && r.totalStock > 0) return false;
       if (!q) return true;
       return (
@@ -342,19 +335,33 @@ export function InventoryTable({
         r.variantLabel.toLowerCase().includes(q)
       );
     });
-  }, [rows, search, lowStockOnly]);
+  }, [rows, search, lowStockOnly, deletedVariantIds, deletedProductIds]);
+
+  // Group variants by product preserving insertion order
+  const groupedFiltered = useMemo(() => {
+    const groups = new Map<string, { productId: string; productName: string; variants: VariantRow[] }>();
+    for (const row of filtered) {
+      const g = groups.get(row.productId);
+      if (g) {
+        g.variants.push(row);
+      } else {
+        groups.set(row.productId, { productId: row.productId, productName: row.productName, variants: [row] });
+      }
+    }
+    return Array.from(groups.values());
+  }, [filtered]);
 
   const lowStockCount = rows.filter((r) => r.totalStock === 0).length;
+
+  // Total columns: Talla + SKU + Código(hidden) + Costo + stores + Total + Actions
+  const totalCols = 6 + stores.length;
 
   return (
     <>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-48">
-          <Search
-            size={14}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#29252A]/35"
-          />
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#29252A]/35" />
           <input
             type="search"
             placeholder="Buscar por producto, SKU o código de barras…"
@@ -363,7 +370,6 @@ export function InventoryTable({
             className="w-full rounded-xl border border-[#EBE4E1] bg-white py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:ring-2 focus:ring-[#C9748A]/25 hover:border-[#C9748A]/30"
           />
         </div>
-
         <button
           onClick={() => setLowStockOnly((v) => !v)}
           className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all ${
@@ -375,11 +381,7 @@ export function InventoryTable({
           <AlertCircle size={14} />
           Stock en cero
           {lowStockCount > 0 && (
-            <span
-              className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold ${
-                lowStockOnly ? "bg-red-200 text-red-800" : "bg-red-100 text-red-600"
-              }`}
-            >
+            <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold ${lowStockOnly ? "bg-red-200 text-red-800" : "bg-red-100 text-red-600"}`}>
               {lowStockCount}
             </span>
           )}
@@ -392,119 +394,174 @@ export function InventoryTable({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#EBE4E1] bg-[#F4EFEc]">
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                  Producto / Variante
-                </th>
-                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                  SKU
-                </th>
-                <th className="hidden px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40 lg:table-cell">
-                  Código
-                </th>
-                <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                  Costo $
-                </th>
+                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Talla / Variante</th>
+                <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">SKU</th>
+                <th className="hidden px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40 lg:table-cell">Código</th>
+                <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Costo $</th>
                 {stores.map((s) => (
-                  <th
-                    key={s.id}
-                    className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40"
-                  >
+                  <th key={s.id} className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
                     {s.code ?? s.name}
                   </th>
                 ))}
-                <th className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
-                  Total
-                </th>
+                <th className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Total</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row) => {
-                const rowTotal = getRowTotal(row);
-                const isZero = rowTotal === 0;
+              {groupedFiltered.map((group) => {
+                const groupTotal = group.variants.reduce((sum, v) => sum + getRowTotal(v), 0);
+                const groupIsZero = groupTotal === 0;
+                const isDeletingThisProduct = deletingProductId === group.productId;
+                const isConfirmingThisProduct = confirmDeleteProductId === group.productId;
+
                 return (
-                  <tr
-                    key={row.variantId}
-                    className={`border-t border-[#EBE4E1] transition-colors ${
-                      isZero ? "bg-red-50/40 hover:bg-red-50/60" : "hover:bg-[#F4EFEc]/40"
-                    }`}
-                  >
-                    {/* Product + Variant */}
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-[#29252A] leading-tight">
-                        {row.productName}
-                      </p>
-                      <p className="text-xs text-[#29252A]/50">{row.variantLabel}</p>
-                    </td>
-
-                    {/* SKU */}
-                    <td className="px-4 py-3 font-mono text-xs text-[#29252A]/60">
-                      {row.sku}
-                    </td>
-
-                    {/* Barcode */}
-                    <td className="hidden px-4 py-3 font-mono text-xs text-[#29252A]/40 lg:table-cell">
-                      {row.barcode ?? "—"}
-                    </td>
-
-                    {/* Cost */}
-                    <td className="px-4 py-3 text-right">
-                      <CostCell variantId={row.variantId} initialCost={row.costUsd} />
-                    </td>
-
-                    {/* Stock per store */}
-                    {stores.map((s) => (
-                      <td key={s.id} className="px-4 py-3 text-center">
-                        <StockCell
-                          variantId={row.variantId}
-                          storeId={s.id}
-                          initialQty={row.stockByStore[s.id] ?? 0}
-                          onSaved={(qty) => handleStockSaved(row.variantId, s.id, qty)}
-                        />
+                  <>
+                    {/* ── Product header row ────────────────────────────────── */}
+                    <tr key={`product-${group.productId}`} className="border-t-2 border-[#EBE4E1] bg-[#F4EFEc]/70">
+                      <td colSpan={totalCols - 1} className="px-4 py-2.5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-bold text-[#29252A]">{group.productName}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${
+                            groupIsZero ? "bg-red-100 text-red-700" : groupTotal <= 5 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                          }`}>
+                            {groupTotal} en stock
+                          </span>
+                          <span className="text-xs text-[#29252A]/40">
+                            {group.variants.length} talla{group.variants.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
                       </td>
-                    ))}
+                      <td className="px-4 py-2.5 text-right">
+                        {isConfirmingThisProduct ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <span className="text-xs font-medium text-red-600">¿Eliminar producto?</span>
+                            <button
+                              onClick={() => handleDeleteProduct(group.productId)}
+                              disabled={isDeletingThisProduct}
+                              className="rounded-lg bg-red-500 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                            >
+                              {isDeletingThisProduct ? "…" : "Sí"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteProductId(null)}
+                              className="rounded-lg px-2 py-1 text-xs font-semibold text-[#29252A]/60 transition-colors hover:bg-[#EBE4E1]"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteProductId(group.productId)}
+                            title="Eliminar producto"
+                            className="rounded-lg p-1.5 text-[#29252A]/30 transition-colors hover:bg-red-50 hover:text-red-500"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
 
-                    {/* Total */}
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-block min-w-[2rem] rounded-full px-2 py-0.5 text-sm font-bold tabular-nums ${
-                          isZero
-                            ? "bg-red-100 text-red-700"
-                            : rowTotal <= 5
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-emerald-100 text-emerald-700"
-                        }`}
-                      >
-                        {rowTotal}
-                      </span>
-                    </td>
+                    {/* ── Variant rows ──────────────────────────────────────── */}
+                    {group.variants.map((row) => {
+                      const rowTotal = getRowTotal(row);
+                      const isZero = rowTotal === 0;
+                      const isConfirmingVariant = confirmDeleteVariantId === row.variantId;
+                      const isDeletingVariant = deletingVariantId === row.variantId;
 
-                    {/* History */}
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() =>
-                          setModalVariant({
-                            variantId: row.variantId,
-                            label: `${row.productName} · ${row.variantLabel}`,
-                          })
-                        }
-                        title="Ver historial"
-                        className="rounded-lg p-1.5 text-[#29252A]/30 transition-colors hover:bg-[#F4EFEc] hover:text-[#C9748A]"
-                      >
-                        <History size={14} />
-                      </button>
-                    </td>
-                  </tr>
+                      return (
+                        <tr
+                          key={row.variantId}
+                          className={`border-t border-[#EBE4E1] transition-colors ${
+                            isZero ? "bg-red-50/40 hover:bg-red-50/60" : "hover:bg-[#F4EFEc]/40"
+                          }`}
+                        >
+                          {/* Variant label */}
+                          <td className="py-2.5 pl-8 pr-4">
+                            <p className="font-medium text-[#29252A]">{row.variantLabel}</p>
+                          </td>
+
+                          {/* SKU */}
+                          <td className="px-4 py-2.5 font-mono text-xs text-[#29252A]/60">{row.sku}</td>
+
+                          {/* Barcode */}
+                          <td className="hidden px-4 py-2.5 font-mono text-xs text-[#29252A]/40 lg:table-cell">{row.barcode ?? "—"}</td>
+
+                          {/* Cost */}
+                          <td className="px-4 py-2.5 text-right">
+                            <CostCell variantId={row.variantId} initialCost={row.costUsd} />
+                          </td>
+
+                          {/* Stock per store */}
+                          {stores.map((s) => (
+                            <td key={s.id} className="px-4 py-2.5 text-center">
+                              <StockCell
+                                variantId={row.variantId}
+                                storeId={s.id}
+                                initialQty={row.stockByStore[s.id] ?? 0}
+                                onSaved={(qty) => handleStockSaved(row.variantId, s.id, qty)}
+                              />
+                            </td>
+                          ))}
+
+                          {/* Row total */}
+                          <td className="px-4 py-2.5 text-center">
+                            <span className={`inline-block min-w-[2rem] rounded-full px-2 py-0.5 text-sm font-bold tabular-nums ${
+                              isZero ? "bg-red-100 text-red-700" : rowTotal <= 5 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                            }`}>
+                              {rowTotal}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-4 py-2.5 text-right">
+                            {isConfirmingVariant ? (
+                              <div className="flex items-center justify-end gap-1">
+                                <span className="text-xs font-medium text-red-600">¿Eliminar?</span>
+                                <button
+                                  onClick={() => handleDeleteVariant(row.variantId)}
+                                  disabled={isDeletingVariant}
+                                  className="rounded-lg bg-red-500 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                                >
+                                  {isDeletingVariant ? "…" : "Sí"}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteVariantId(null)}
+                                  className="rounded-lg px-2 py-1 text-xs font-semibold text-[#29252A]/60 transition-colors hover:bg-[#EBE4E1]"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end gap-0.5">
+                                <button
+                                  onClick={() => setModalVariant({ variantId: row.variantId, label: `${row.productName} · ${row.variantLabel}` })}
+                                  title="Ver historial"
+                                  className="rounded-lg p-1.5 text-[#29252A]/30 transition-colors hover:bg-[#F4EFEc] hover:text-[#C9748A]"
+                                >
+                                  <History size={14} />
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteVariantId(row.variantId)}
+                                  title="Desactivar talla"
+                                  className="rounded-lg p-1.5 text-[#29252A]/30 transition-colors hover:bg-red-50 hover:text-red-500"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </>
                 );
               })}
 
-              {filtered.length === 0 && (
+              {groupedFiltered.length === 0 && (
                 <tr>
-                  <td colSpan={5 + stores.length + 1}>
+                  <td colSpan={totalCols}>
                     <p className="py-10 text-center text-sm text-[#29252A]/40">
-                      {search || lowStockOnly
-                        ? "Sin resultados para el filtro aplicado"
-                        : "Sin variantes de producto"}
+                      {search || lowStockOnly ? "Sin resultados para el filtro aplicado" : "Sin variantes de producto"}
                     </p>
                   </td>
                 </tr>
@@ -514,11 +571,12 @@ export function InventoryTable({
         </div>
 
         {/* Footer summary */}
-        {filtered.length > 0 && (
+        {groupedFiltered.length > 0 && (
           <div className="flex items-center justify-between border-t border-[#EBE4E1] px-4 py-2.5 text-xs text-[#29252A]/40">
             <span>
+              {groupedFiltered.length} producto{groupedFiltered.length !== 1 ? "s" : ""} ·{" "}
               {filtered.length} variante{filtered.length !== 1 ? "s" : ""}
-              {filtered.length < rows.length && ` de ${rows.length}`}
+              {filtered.length < rows.length && ` (de ${rows.length})`}
             </span>
             <span>
               Total en stock:{" "}
