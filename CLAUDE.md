@@ -17,14 +17,16 @@ npm run build        # build de producción (igual que Vercel)
 
 ## Tokens de diseño (brand)
 
-| Token        | Valor     | Uso                          |
-|--------------|-----------|------------------------------|
-| Rose/Primary | `#C9748A` | CTAs, acentos, activos       |
-| Ink          | `#29252A` | Texto principal              |
-| Cream        | `#F4EFEc` | Fondo general del admin      |
-| Border       | `#EBE4E1` | Bordes de cards y tablas     |
+| Token          | Valor     | Uso                          |
+|----------------|-----------|------------------------------|
+| Wine/Primary   | `#7B1847` | CTAs, acentos, activos       |
+| Ink            | `#29252A` | Texto principal              |
+| Cream          | `#FDF8FB` | Fondo general del admin      |
+| Border         | `#EBE0E7` | Bordes de cards y tablas     |
+| Mauve          | `#F0D8E8` | Fondos secundarios           |
+| Rose-light     | `#F0B8D0` | Acentos suaves               |
 
-Todos los componentes del admin usan estos valores directamente con Tailwind (e.g., `bg-[#C9748A]`), **no** variables CSS.
+Todos los componentes del admin usan estos valores directamente con Tailwind (e.g., `bg-[#7B1847]`), **no** variables CSS.
 
 ## Estructura del proyecto
 

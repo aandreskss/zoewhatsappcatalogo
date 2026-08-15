@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/components/cart/cart-context";
 import { MobileMenu } from "@/components/layout/mobile-menu";
 
@@ -22,9 +23,9 @@ export function SiteHeader({
     <header
       className="fixed top-0 left-0 right-0 z-50"
       style={{
-        backgroundColor: "rgba(255,253,252,0.92)",
+        backgroundColor: "rgba(253,248,251,0.92)",
         backdropFilter: "blur(16px)",
-        borderBottom: "1px solid #ECE7EA",
+        borderBottom: "1px solid #EBE0E7",
       }}
     >
       <div className="mx-auto max-w-[1440px] px-4 md:px-8 lg:px-12">
@@ -48,9 +49,16 @@ export function SiteHeader({
           {/* Logo — centered absolute */}
           <Link
             href="/"
-            className="absolute left-1/2 -translate-x-1/2 font-display text-2xl md:text-3xl tracking-wide text-[var(--color-foreground)]"
+            className="absolute left-1/2 -translate-x-1/2"
           >
-            Zoe
+            <Image
+              src="/logo.jpeg"
+              alt="Zoe Shop"
+              width={40}
+              height={40}
+              className="h-9 md:h-10 w-auto rounded-sm"
+              priority
+            />
           </Link>
 
           {/* Desktop: nav right */}

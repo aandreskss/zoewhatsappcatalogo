@@ -6,7 +6,7 @@
  * para `JSON.stringify` dentro de un `<script type="application/ld+json">`.
  */
 
-const SITE_NAME = "Zoe Shoes";
+const SITE_NAME = "Zoe Shop";
 
 function siteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

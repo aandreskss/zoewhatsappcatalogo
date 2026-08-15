@@ -26,11 +26,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
     title: {
-      default: "Zoe Shoes",
-      template: "%s · Zoe Shoes",
+      default: "Zoe Shop",
+      template: "%s · Zoe Shop",
     },
     description:
-      "Catálogo de zapatos Zoe — encuentra tu talla y arma tu pedido para coordinarlo por WhatsApp.",
+      "Catálogo de calzado Zoe Shop — damas, caballeros, deportivo y escolar. Arma tu pedido y coordínalo por WhatsApp. Valencia, Venezuela.",
     ...(googleVerification && {
       verification: { google: googleVerification },
     }),

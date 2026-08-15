@@ -37,7 +37,7 @@ export default async function HomePage() {
       <section className="relative h-[90vh] overflow-hidden bg-[var(--color-beige)]">
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(135deg, #EFE5DC 0%, #F4D6DD 50%, #EEE8F8 100%)" }}
+          style={{ background: "linear-gradient(135deg, #F0D8E8 0%, #C98CA0 50%, #7B1847 100%)" }}
         />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(41,37,42,0.25) 100%)" }} />
 
@@ -87,7 +87,7 @@ export default async function HomePage() {
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </div>
-          <h2 className="font-display text-3xl text-[var(--color-foreground)] mb-3">Bienvenida a Zoe</h2>
+          <h2 className="font-display text-3xl text-[var(--color-foreground)] mb-3">Bienvenido a Zoe Shop</h2>
           <p className="text-sm text-[var(--color-muted-foreground)] mb-8 max-w-sm mx-auto leading-relaxed">
             El catálogo está casi listo. Explora todos los modelos disponibles.
           </p>
@@ -104,7 +104,7 @@ export default async function HomePage() {
       )}
 
       {/* PROMO BANNER */}
-      <section className="mx-6 md:mx-12 rounded-[var(--radius-xl)] overflow-hidden my-16 md:my-24" style={{ backgroundColor: "#EEE8F8" }}>
+      <section className="mx-6 md:mx-12 rounded-[var(--radius-xl)] overflow-hidden my-16 md:my-24" style={{ backgroundColor: "#F0D8E8" }}>
         <div className="flex flex-col md:flex-row items-center">
           <div className="flex-1 p-10 md:p-16 order-2 md:order-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted-foreground)] mb-4">
@@ -145,12 +145,12 @@ export default async function HomePage() {
           {[
             {
               name: "Zoe Centro",
-              address: "Centro de Valencia, cerca del Mercado Municipal",
+              address: "Calle Independencia esq. Díaz Moreno, C.C. ilduomo Local LB01, Valencia 2001",
               hours: "Lun–Sáb: 9am – 7pm · Dom: 10am – 4pm",
             },
             {
               name: "Zoe Av. Bolívar",
-              address: "Av. Bolívar Norte, Valencia",
+              address: "Av. Bolívar Norte, al lado del C.C. Villa Alegre, Valencia 2001",
               hours: "Lun–Sáb: 10am – 8pm · Dom: 11am – 5pm",
             },
           ].map((store) => (

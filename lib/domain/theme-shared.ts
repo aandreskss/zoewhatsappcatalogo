@@ -18,10 +18,10 @@ export interface SafeThemeTokens {
 }
 
 export const DEFAULT_THEME_TOKENS: SafeThemeTokens = {
-  colorPrimary: "#C9748A",    // Zoe rose (matches globals.css)
-  colorSecondary: "#EEE8F8",  // Zoe lavender
-  colorAccent: "#F4D6DD",     // Zoe rose-light
-  colorBackground: "#FFFDFC", // Zoe cream
+  colorPrimary: "#7B1847",    // Zoe wine (matches globals.css)
+  colorSecondary: "#F0D8E8",  // Zoe mauve
+  colorAccent: "#F0B8D0",     // Zoe rose-light
+  colorBackground: "#FDF8FB", // Zoe cream
   colorForeground: "#29252A", // Zoe ink
   radius: "md",
 };

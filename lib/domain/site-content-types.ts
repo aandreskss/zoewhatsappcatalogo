@@ -21,21 +21,21 @@ export interface SiteContent {
 }
 
 export const DEFAULT_SITE_CONTENT: SiteContent = {
-  heroLabel: "Nueva colección",
-  heroTitle: "Encuentra tu próximo favorito.",
+  heroLabel: "20 años vistiendo tus pasos",
+  heroTitle: "El zapato ideal para cada momento.",
   heroSubtitle:
-    "Descubre los nuevos modelos de Zoe. Diseñados para cada momento, pensados para ti.",
+    "Calzado para toda la familia: damas, caballeros, deportivo, escolar y más. Calidad y variedad en Valencia.",
   heroCtaText: "Ver colección",
   heroCtaHref: "/catalogo",
-  catalogLabel: "Colección SS 2025",
-  promoLabel: "Colección especial",
-  promoTitle: "Camina a tu manera.",
+  catalogLabel: "Catálogo Zoe Shop",
+  promoLabel: "Especialidad Zoe",
+  promoTitle: "Tacones, stilettos y confort.",
   promoSubtitle:
-    "Encuentra modelos para cada momento de tu vida. Desde el trabajo hasta la noche.",
+    "Tacones importados, quinceañeras, deportivo y sandalias ortopédicas. Todo en un solo lugar.",
   promoCtaText: "Descubrir",
   promoCtaHref: "/catalogo",
-  whatsapp: "584241234567",
-  instagram: "@zoe.valencia",
+  whatsapp: "584244738930",
+  instagram: "@Zoe_dist",
   navLinks: [
     { label: "Inicio", href: "/" },
     { label: "Catálogo", href: "/catalogo" },

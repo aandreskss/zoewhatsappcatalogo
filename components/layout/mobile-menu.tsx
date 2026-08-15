@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export function MobileMenu({
   categories,
@@ -45,7 +46,13 @@ export function MobileMenu({
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             </button>
-            <p className="font-display text-3xl text-[var(--color-foreground)] mb-8">Zoe</p>
+            <Image
+              src="/logo.jpeg"
+              alt="Zoe Shop"
+              width={48}
+              height={48}
+              className="h-12 w-auto rounded-sm mb-8"
+            />
             <nav className="flex flex-col gap-1">
               {navItems.map((item) => (
                 <Link
@@ -60,7 +67,7 @@ export function MobileMenu({
             </nav>
             <div className="mt-auto">
               <p className="text-xs text-[var(--color-muted-foreground)]">Valencia, Venezuela</p>
-              <p className="text-xs text-[var(--color-muted-foreground)] mt-1">@zoe.valencia</p>
+              <p className="text-xs text-[var(--color-muted-foreground)] mt-1">@Zoe_dist</p>
             </div>
           </div>
         </div>
