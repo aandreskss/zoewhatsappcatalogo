@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Search, History, X, AlertCircle } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Search, History, X, AlertCircle, Check } from "lucide-react";
 import {
   updateInventoryAction,
   updateCostAction,
@@ -31,49 +31,74 @@ function StockCell({
   variantId,
   storeId,
   initialQty,
+  onSaved,
 }: {
   variantId: string;
   storeId: string;
   initialQty: number;
+  onSaved?: (qty: number) => void;
 }) {
   const [value, setValue] = useState(initialQty);
   const [saving, setSaving] = useState(false);
   const [flash, setFlash] = useState<"ok" | "err" | null>(null);
+  const savedQty = useRef(initialQty);
+  const isDirty = value !== savedQty.current;
 
-  async function handleBlur() {
+  async function save() {
     const qty = Math.max(0, Math.round(value));
-    if (qty === initialQty) return;
+    if (qty === savedQty.current) return;
     setSaving(true);
     const result = await updateInventoryAction(variantId, storeId, qty);
     setSaving(false);
     if (result.error) {
-      setValue(initialQty);
+      setValue(savedQty.current);
       setFlash("err");
     } else {
+      savedQty.current = qty;
       setFlash("ok");
+      onSaved?.(qty);
     }
     setTimeout(() => setFlash(null), 1500);
+  }
+
+  async function handleBlur() {
+    if (!isDirty) return;
+    await save();
   }
 
   const isZero = value === 0;
 
   return (
-    <input
-      type="number"
-      min={0}
-      value={value}
-      onChange={(e) => setValue(Number(e.target.value))}
-      onBlur={handleBlur}
-      disabled={saving}
-      title={flash === "err" ? "Error al guardar" : undefined}
-      className={`w-16 rounded-lg border px-2 py-1 text-center text-sm tabular-nums outline-none transition-all disabled:opacity-40
-        focus:ring-2 focus:ring-[#C9748A]/25
-        ${flash === "ok" ? "border-emerald-400 bg-emerald-50" : ""}
-        ${flash === "err" ? "border-red-400 bg-red-50" : ""}
-        ${flash === null && isZero ? "border-red-200 bg-red-50 text-red-600" : ""}
-        ${flash === null && !isZero ? "border-[#EBE4E1] bg-white text-[#29252A] hover:border-[#C9748A]/40" : ""}
-      `}
-    />
+    <div className="flex items-center justify-center gap-1">
+      <input
+        type="number"
+        min={0}
+        value={value}
+        onChange={(e) => setValue(Number(e.target.value))}
+        onBlur={handleBlur}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); save(); } }}
+        disabled={saving}
+        title={flash === "err" ? "Error al guardar" : undefined}
+        className={`w-14 rounded-lg border px-2 py-1 text-center text-sm tabular-nums outline-none transition-all disabled:opacity-40
+          focus:ring-2 focus:ring-[#C9748A]/25
+          ${flash === "ok" ? "border-emerald-400 bg-emerald-50" : ""}
+          ${flash === "err" ? "border-red-400 bg-red-50" : ""}
+          ${flash === null && isDirty ? "border-[#7B1847]/50 bg-[#FDF8FB]" : ""}
+          ${flash === null && !isDirty && isZero ? "border-red-200 bg-red-50 text-red-600" : ""}
+          ${flash === null && !isDirty && !isZero ? "border-[#EBE4E1] bg-white text-[#29252A] hover:border-[#C9748A]/40" : ""}
+        `}
+      />
+      {isDirty && !saving && flash === null && (
+        <button
+          type="button"
+          onClick={save}
+          title="Guardar cantidad"
+          className="shrink-0 rounded-lg p-1 text-[#7B1847] transition-colors hover:bg-[#F0D8E8]"
+        >
+          <Check size={12} />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -283,6 +308,27 @@ export function InventoryTable({
     variantId: string;
     label: string;
   } | null>(null);
+  // Tracks quantities saved during this session so the Total column updates live
+  const [stockOverrides, setStockOverrides] = useState<Map<string, number>>(new Map());
+
+  function handleStockSaved(variantId: string, storeId: string, newQty: number) {
+    setStockOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(`${variantId}:${storeId}`, newQty);
+      return next;
+    });
+  }
+
+  function getRowTotal(row: VariantRow): number {
+    let total = 0;
+    for (const store of stores) {
+      const key = `${row.variantId}:${store.id}`;
+      total += stockOverrides.has(key)
+        ? stockOverrides.get(key)!
+        : (row.stockByStore[store.id] ?? 0);
+    }
+    return total;
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -374,7 +420,8 @@ export function InventoryTable({
             </thead>
             <tbody>
               {filtered.map((row) => {
-                const isZero = row.totalStock === 0;
+                const rowTotal = getRowTotal(row);
+                const isZero = rowTotal === 0;
                 return (
                   <tr
                     key={row.variantId}
@@ -412,6 +459,7 @@ export function InventoryTable({
                           variantId={row.variantId}
                           storeId={s.id}
                           initialQty={row.stockByStore[s.id] ?? 0}
+                          onSaved={(qty) => handleStockSaved(row.variantId, s.id, qty)}
                         />
                       </td>
                     ))}
@@ -422,12 +470,12 @@ export function InventoryTable({
                         className={`inline-block min-w-[2rem] rounded-full px-2 py-0.5 text-sm font-bold tabular-nums ${
                           isZero
                             ? "bg-red-100 text-red-700"
-                            : row.totalStock <= 5
+                            : rowTotal <= 5
                               ? "bg-amber-100 text-amber-700"
                               : "bg-emerald-100 text-emerald-700"
                         }`}
                       >
-                        {row.totalStock}
+                        {rowTotal}
                       </span>
                     </td>
 
@@ -475,7 +523,7 @@ export function InventoryTable({
             <span>
               Total en stock:{" "}
               <span className="font-semibold text-[#29252A]/70">
-                {filtered.reduce((s, r) => s + r.totalStock, 0).toLocaleString("es-VE")}
+                {filtered.reduce((s, r) => s + getRowTotal(r), 0).toLocaleString("es-VE")}
               </span>
             </span>
           </div>

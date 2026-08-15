@@ -123,15 +123,20 @@ function isKnownNonStore(normKey: string): boolean {
 }
 
 /**
- * Returns true if a store's name contains at least one significant word (>3 chars)
+ * Returns true if a store's name OR code contains at least one significant word (>3 chars)
  * from the CSV column label.  Works even when names vary slightly between exports.
  */
-function storeMatchesColumn(storeName: string, colLabel: string): boolean {
-  const storeNorm = normalizeForMatch(storeName);
+function storeMatchesColumn(storeName: string, storeCode: string | null, colLabel: string): boolean {
   const colNorm = normalizeForMatch(colLabel);
   const words = colNorm.split(" ").filter((w) => w.length > 3);
   if (words.length === 0) return false;
-  return words.some((w) => storeNorm.includes(w));
+  const storeNorm = normalizeForMatch(storeName);
+  if (words.some((w) => storeNorm.includes(w))) return true;
+  if (storeCode) {
+    const codeNorm = normalizeForMatch(storeCode);
+    if (words.some((w) => codeNorm.includes(w))) return true;
+  }
+  return false;
 }
 
 function findCategoryId(
@@ -243,7 +248,7 @@ export async function POST(request: Request) {
     const normKey = normHeaders[i]!;
     if (isKnownNonStore(normKey)) continue;
 
-    const matched = stores.find((s) => storeMatchesColumn(s.name, rawHeaders[i]!));
+    const matched = stores.find((s) => storeMatchesColumn(s.name, s.code ?? null, rawHeaders[i]!));
     if (matched) {
       // Avoid duplicate store mappings (same store mapped from two similar columns)
       if (!storeMappings.some((m) => m.storeId === matched.id)) {

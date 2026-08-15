@@ -111,12 +111,60 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 
 - **Cloudinary**: subida de imágenes. Dominios `api.cloudinary.com` (connect-src) y `res.cloudinary.com` (img-src) ya en la CSP de `next.config.ts`.
 - **Unsplash**: imágenes de demo. Dominio `images.unsplash.com` ya en `remotePatterns` de `next.config.ts`.
-- **Fina Partner**: sin API pública. Integración vía CSV bidireccional: exportar pedidos (`/api/admin/export/pedidos`) e importar inventario (`/api/admin/import/inventario`).
+- **Fina Partner**: sin API pública. Integración vía CSV bidireccional desde `/admin/integraciones/fina`. Ver sección detallada abajo.
 - **Google Search Console**: verificación vía meta tag. El código se guarda en `integrations` con provider `google_search_console` y se inyecta en `generateMetadata()` del root layout.
+
+## Integración Fina Partner (detalle)
+
+Página: `app/admin/(protected)/integraciones/fina/page.tsx`. Tres modos:
+
+### 1 — Exportar pedidos (Zoe → Fina)
+Route: `GET /api/admin/export/pedidos`. Genera CSV con columnas de pedido listas para importar en Fina como ventas/facturas.
+
+### 2 — Importar inventario formato nativo Fina (Fina → Zoe)
+Route: `POST /api/admin/import/fina-nativo` → `app/api/admin/import/fina-nativo/route.ts`  
+Componente: `components/admin/fina-nativo-import-form.tsx`
+
+Acepta **CSV, XLSX, XLSM, XLS** (usa `xlsx@0.18.5` / SheetJS). Parsea el formato jerárquico de Fina:
+- Filas `Tipo=Item` → nombre y SKU del producto padre
+- Filas `Tipo=Variacion` → talla/size individual
+
+**Columnas reconocidas:**
+| Columna Fina | Uso |
+|---|---|
+| `Tipo` | `Item` o `Variacion` |
+| `Nombre` | nombre del item / talla de la variación |
+| `SKU` | SKU del item padre (puede estar vacío) |
+| `Categoria` | se mapea a categorías activas por nombre fuzzy |
+| `Costo unitario` | `cost_usd` de la variante |
+| `Valor en inventario` | precio de venta = valor / cantidad |
+| `Sin ubicación`, `Cualquiera` | siempre ignoradas |
+| Columnas de sede | detectadas automáticamente por nombre fuzzy |
+
+**Detección de tiendas:** `storeMatchesColumn(storeName, storeCode, colLabel)` extrae palabras >3 chars del encabezado CSV y verifica si aparecen en el nombre O el `code` de la tienda en DB (normalizado, sin tildes). Si no hay match, la columna aparece en `unknownStoreColumns` con sugerencia de crear la sucursal.
+
+**Fallback store:** Si ninguna columna de tienda es reconocida, se puede seleccionar una tienda destino en el formulario y se usa la columna `Cantidad` total.
+
+**Creación automática de productos** (`create_missing=true` por defecto): si la variante no existe, crea el árbol completo: `products` (status `draft`) → `product_options` (Talla) → `product_option_values` → `product_variants` → `variant_option_values` → `inventory`. El SKU de la variante se construye como `{PARENTSKU}-{talla}` o `{PARENTNOMBRE}-{talla}`. Se usa `batchCreated` Map para no duplicar el producto padre dentro del mismo lote.
+
+**Búsqueda de variantes existentes:** candidatos en orden: `SKU-talla`, `SKU_talla`, `NOMBRE-talla`, `NOMBRE_talla`, `SKU` bare (fallback). Búsqueda con `.ilike()` (case-insensitive).
+
+### 3 — Importar inventario CSV plano (formato personalizado)
+Route: `POST /api/admin/import/inventario`  
+Componente: `components/admin/fina-import-form.tsx`  
+CSV simple con columnas `sku, cantidad` (acepta aliases). Para ajustes manuales.
+
+---
 
 ## Datos de inventario
 
 Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_movements` (audit trail). Los tipos de movimiento son: `entrada | salida | ajuste | transferencia | venta | liberacion`. Todo ajuste manual crea un registro en `inventory_movements`.
+
+**Tabla de inventario (`/admin/inventario`):** `components/admin/inventory-table.tsx`
+- Columnas por sucursal dinámicas según tiendas activas en DB
+- `StockCell`: edición inline con guardado al perder foco (onBlur) o al presionar Enter. Muestra botón ✓ cuando el valor es distinto al guardado. Callback `onSaved` actualiza el Total de la fila en tiempo real sin recargar.
+- `CostCell`: igual pero para `cost_usd`, solo guarda en onBlur.
+- Total reactivo: `InventoryTable` mantiene `stockOverrides: Map<variantId:storeId, qty>` y lo suma sobre los valores del servidor al renderizar el total de cada fila.
 
 ## Sistema de banners y secciones del Home
 

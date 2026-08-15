@@ -39,7 +39,7 @@ export function FinaNativoImportForm({ stores }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FinaNativoImportResponse | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [createMissing, setCreateMissing] = useState(false);
+  const [createMissing, setCreateMissing] = useState(true);
   const [fallbackStoreId, setFallbackStoreId] = useState("");
 
   function handleFile(f: File) {
