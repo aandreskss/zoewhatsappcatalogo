@@ -100,11 +100,11 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 
 ## Convenciones de UI del admin
 
-- Tablas: `rounded-2xl border border-[#EBE4E1] bg-white shadow-[0_1px_3px_rgba(41,37,42,0.06)]`
+- Tablas: `rounded-2xl border border-[#EBE0E7] bg-white shadow-[0_1px_3px_rgba(41,37,42,0.06)]`
 - Cabeceras de tabla: `text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40`
-- Pills de filtro activos: `bg-[#29252A] text-white` (Todos) o `bg-[#C9748A] text-white` (estado específico)
-- Empty states: icono centered en `bg-[#F4EFEc]` dentro de `rounded-2xl`, texto `text-sm font-semibold text-[#29252A]`
-- Sidebar: `bg-[#29252A]`, nav activo `bg-[#C9748A]/20 text-[#C9748A]`
+- Pills de filtro activos: `bg-[#29252A] text-white` (Todos) o `bg-[#7B1847] text-white` (estado específico)
+- Empty states: icono centered en `bg-[#F0D8E8]` dentro de `rounded-2xl`, texto `text-sm font-semibold text-[#29252A]`
+- Sidebar: `bg-[#29252A]`, nav activo `bg-[#7B1847]/20 text-[#7B1847]`
 - `AdminShell` exporta un wrapper con `<Suspense>` para resolver React error #441 (`usePathname` suspendiendo)
 
 ## Integraciones externas importantes
@@ -139,3 +139,38 @@ Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_mo
 - Columna `is_new` en `products` se debe citar siempre como `"is_new"` en SQL (es keyword reservada en PostgreSQL dentro de triggers).
 - La tabla `stores` tiene columna `code` NOT NULL — incluirla en cualquier INSERT manual.
 - Si el script ya corrió y se necesita agregar nuevos registros (ej. banners), hacerlo con SQL directo usando `INSERT ... WHERE NOT EXISTS` o `UPDATE ... WHERE name = '...'`.
+
+## Identidad de marca
+
+**Nombre oficial:** Zoe Shop (RIF: UNIVERSO ZOE SHOP, C.A — J507908810)  
+**Rubro:** Calzado al mayor y al detal — 20 años de trayectoria  
+**Logo:** `public/logo.jpeg` — "ZOE" bold en caja blanca + "shop" en cursiva, fondo negro  
+**WhatsApp:** `584244738930` (0424-4738930)  
+**Instagram:** `@Zoe_dist`
+
+**Sedes:**
+- **Centro:** Calle Independencia esq. Díaz Moreno, C.C. ilduomo Local LB01, Valencia 2001, Carabobo
+- **Av. Bolívar:** Av. Bolívar Norte, al lado del C.C. Villa Alegre, Valencia 2001, Carabobo
+
+**Categorías:** Damas · Caballeros · Adulto mayor · Tallas plus · Escolares · Deportivos  
+**Especialidad:** Tacones y stilettos importados, quinceañeras, deportivo, sandalias ortopédicas y confort
+
+Los textos y datos de contacto por defecto viven en `lib/domain/site-content-types.ts` (`DEFAULT_SITE_CONTENT`). El admin puede sobreescribirlos desde `/admin/apariencia/contenido`.
+
+## CRM de clientes (Fase 13 — migración 0024)
+
+**Tablas:** `customer_tags`, `customer_tag_assignments`, `customer_notes`
+
+**Segmentación RFM automática** (`lib/domain/customers.ts`):
+- `VIP` · `Frecuente` · `Regular` · `Nuevo` · `En riesgo` · `Inactivo`
+
+**Rutas admin:**
+- `/admin/clientes` — lista con búsqueda, filtros por segmento y ordenamiento
+- `/admin/clientes/[id]` — perfil completo: KPIs, historial pedidos, notas, etiquetas, direcciones, UTMs
+
+**Componentes clave:**
+- `customer-segment-badge` — pill de color por segmento
+- `add-customer-note-form` — formulario de nota inline
+- `customer-tags-editor` — editor de etiquetas con autocompletado
+
+El detalle de pedido (`/admin/pedidos/[id]`) incluye enlace "Ver perfil de cliente →" al perfil del CRM.
