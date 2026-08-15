@@ -145,7 +145,7 @@ Acepta **CSV, XLSX, XLSM, XLS** (usa `xlsx@0.18.5` / SheetJS). Parsea el formato
 
 **Fallback store:** Si ninguna columna de tienda es reconocida, se puede seleccionar una tienda destino en el formulario y se usa la columna `Cantidad` total.
 
-**Creación automática de productos** (`create_missing=true` por defecto): si la variante no existe, crea el árbol completo: `products` (status `draft`) → `product_options` (Talla) → `product_option_values` → `product_variants` → `variant_option_values` → `inventory`. El SKU de la variante se construye como `{PARENTSKU}-{talla}` o `{PARENTNOMBRE}-{talla}`. Se usa `batchCreated` Map para no duplicar el producto padre dentro del mismo lote.
+**Creación automática de productos** (`create_missing=true` por defecto): si la variante no existe, crea el árbol completo: `products` (status `draft`) → `product_options` (Talla) → `product_option_values` → `product_variants` → `variant_option_values` → `inventory`. El nombre del producto usa el casing original del CSV (no mayúsculas); el SKU de la variante se construye como `{PARENTSKU}-{talla}` o `{PARENTNOMBRE_UPPER}-{talla}`. Se usa `batchCreated` Map para no duplicar el producto padre dentro del mismo lote. Al terminar llama `revalidatePath("/admin/productos")` y `revalidatePath("/admin/inventario")`. El formulario muestra un botón directo a `/admin/productos?estado=draft` cuando se crean productos nuevos.
 
 **Búsqueda de variantes existentes:** candidatos en orden: `SKU-talla`, `SKU_talla`, `NOMBRE-talla`, `NOMBRE_talla`, `SKU` bare (fallback). Búsqueda con `.ilike()` (case-insensitive).
 
@@ -161,10 +161,13 @@ CSV simple con columnas `sku, cantidad` (acepta aliases). Para ajustes manuales.
 Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_movements` (audit trail). Los tipos de movimiento son: `entrada | salida | ajuste | transferencia | venta | liberacion`. Todo ajuste manual crea un registro en `inventory_movements`.
 
 **Tabla de inventario (`/admin/inventario`):** `components/admin/inventory-table.tsx`
-- Columnas por sucursal dinámicas según tiendas activas en DB
+- Vista agrupada por producto: header por cada producto (nombre + stock total + tallas) con sus variantes/tallas indentadas debajo, igual que el CSV de Fina.
+- Columnas por sucursal dinámicas según tiendas activas en DB.
 - `StockCell`: edición inline con guardado al perder foco (onBlur) o al presionar Enter. Muestra botón ✓ cuando el valor es distinto al guardado. Callback `onSaved` actualiza el Total de la fila en tiempo real sin recargar.
 - `CostCell`: igual pero para `cost_usd`, solo guarda en onBlur.
-- Total reactivo: `InventoryTable` mantiene `stockOverrides: Map<variantId:storeId, qty>` y lo suma sobre los valores del servidor al renderizar el total de cada fila.
+- Total reactivo: `InventoryTable` mantiene `stockOverrides: Map<variantId:storeId, qty>` y lo suma sobre los valores del servidor al renderizar el total de cada fila y del header de producto.
+- **Borrado a dos niveles**: botón 🗑️ en el header del producto (soft-delete: `deleted_at = now()` vía `deleteProductFromInventoryAction`) y botón 🗑️ por variante individual (`status = inactive` vía `deleteVariantAction`). Ambos con confirmación inline de dos pasos. La fila desaparece del cliente inmediatamente sin recargar.
+- Actions en `app/admin/(protected)/inventario/actions.ts`: `updateInventoryAction`, `updateCostAction`, `getMovementsAction`, `deleteVariantAction`, `deleteProductFromInventoryAction`.
 
 ## Sistema de banners y secciones del Home
 
