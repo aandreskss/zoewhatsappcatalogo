@@ -7,8 +7,6 @@ import {
   normalizeHeader,
   storeMatchesColumn,
   isKnownNonStore,
-  slugify,
-  findCategoryId,
   type ColumnRole,
 } from "@/lib/domain/fina-nativo-helpers";
 
@@ -33,7 +31,6 @@ export interface FinaNativoRowResult {
 export interface FinaNativoImportResponse {
   total: number;
   updated: number;
-  created: number;
   notFound: number;
   skipped: number;
   errors: number;
@@ -82,7 +79,6 @@ export async function POST(request: Request) {
   if (!(file instanceof File))
     return NextResponse.json({ error: "No se recibió ningún archivo" }, { status: 400 });
 
-  const createMissing = formData.get("create_missing") === "true";
   const fallbackStoreId = (formData.get("fallback_store_id") as string | null)?.trim() || null;
 
   // Optional explicit column mapping from the UI mapping step
@@ -153,12 +149,8 @@ export async function POST(request: Request) {
   }
 
   const service = createSupabaseServiceRoleClient();
-  const [{ data: allStores }, { data: allCategories }] = await Promise.all([
-    service.from("stores").select("id, name, code").eq("active", true),
-    service.from("categories").select("id, name").eq("active", true),
-  ]);
+  const { data: allStores } = await service.from("stores").select("id, name, code").eq("active", true);
   const stores = allStores ?? [];
-  const categories = allCategories ?? [];
 
   // ── Build store mappings ────────────────────────────────────────────────────
   const storeMappings: StoreColMapping[] = [];
@@ -254,7 +246,6 @@ export async function POST(request: Request) {
 
   // ── Process each group ──────────────────────────────────────────────────────
   const results: FinaNativoRowResult[] = [];
-  const batchCreated = new Map<string, { productId: string; optionId: string }>();
 
   for (const group of groups) {
     const parentSku = group.itemSku.trim().toUpperCase();
@@ -375,176 +366,23 @@ export async function POST(request: Request) {
       }
 
       // ── CASE 2: not found ─────────────────────────────────────────────────
-      if (!createMissing) {
-        const hint = hasSku
-          ? `SKU "${parentSku}" no existe. Se buscó también por nombre.`
-          : `Sin SKU. Se buscó por nombre "${parentNombre}". Activa "Crear productos" o asigna un SKU manualmente.`;
-        results.push({
-          item: group.itemNombre, size,
-          candidateSku: allCandidates[0] ?? "",
-          status: "not_found",
-          message: hint,
-        });
-        continue;
-      }
-
-      // ── CASE 3: create product + variant + inventory ──────────────────────
-      try {
-        let productId: string;
-        let optionId: string;
-
-        if (batchCreated.has(itemKey)) {
-          const cached = batchCreated.get(itemKey)!;
-          productId = cached.productId;
-          optionId = cached.optionId;
-        } else {
-          let existingProductId: string | null = null;
-          if (hasSku) {
-            const { data: ep } = await service
-              .from("products")
-              .select("id")
-              .ilike("sku", parentSku)
-              .is("deleted_at", null)
-              .maybeSingle();
-            if (ep) existingProductId = ep.id;
-          }
-
-          if (existingProductId) {
-            productId = existingProductId;
-            const { data: existingOpt } = await service
-              .from("product_options")
-              .select("id")
-              .eq("product_id", productId)
-              .ilike("name", "talla")
-              .maybeSingle();
-
-            if (existingOpt) {
-              optionId = existingOpt.id;
-            } else {
-              const { data: newOpt, error: optErr } = await service
-                .from("product_options")
-                .insert({ product_id: productId, name: "Talla", order: 1 })
-                .select("id")
-                .single();
-              if (optErr || !newOpt) throw new Error(optErr?.message ?? "Error creando opción Talla");
-              optionId = newOpt.id;
-            }
-          } else {
-            const productName = parentNombreRaw || parentSku;
-            const baseSlug = slugify(productName);
-            let slug = baseSlug;
-            const { data: slugCheck } = await service
-              .from("products")
-              .select("id")
-              .eq("slug", slug)
-              .maybeSingle();
-            if (slugCheck) slug = `${baseSlug}-${Date.now().toString(36).slice(-5)}`;
-
-            const { data: newProduct, error: prodErr } = await service
-              .from("products")
-              .insert({
-                name: productName,
-                slug,
-                sku: group.itemSku || null,
-                category_id: findCategoryId(group.itemCategoria, categories),
-                status: "draft",
-              })
-              .select("id")
-              .single();
-            if (prodErr || !newProduct) throw new Error(prodErr?.message ?? "Error creando producto");
-            productId = newProduct.id;
-
-            const { data: newOpt, error: optErr } = await service
-              .from("product_options")
-              .insert({ product_id: productId, name: "Talla", order: 1 })
-              .select("id")
-              .single();
-            if (optErr || !newOpt) throw new Error(optErr?.message ?? "Error creando opción Talla");
-            optionId = newOpt.id;
-          }
-
-          batchCreated.set(itemKey, { productId, optionId });
-        }
-
-        const { data: newOptVal, error: ovErr } = await service
-          .from("product_option_values")
-          .insert({ option_id: optionId, value: size, order: group.variations.indexOf(variation) + 1 })
-          .select("id")
-          .single();
-        if (ovErr || !newOptVal) throw new Error(ovErr?.message ?? "Error creando talla");
-
-        const variantSku = hasSku ? `${parentSku}-${size}` : `${parentNombre}-${size}`;
-
-        const { data: newVariant, error: varErr } = await service
-          .from("product_variants")
-          .insert({
-            product_id: productId,
-            sku: variantSku,
-            price_usd: price ?? 0,
-            cost_usd: costo,
-            status: "active",
-          })
-          .select("id")
-          .single();
-        if (varErr || !newVariant) throw new Error(varErr?.message ?? "Error creando variante");
-
-        await service.from("variant_option_values").insert({
-          variant_id: newVariant.id,
-          option_value_id: newOptVal.id,
-        });
-
-        const storeResults: FinaNativoStoreResult[] = [];
-        for (const sc of storeCantidades) {
-          if (sc.cantidad < 0) continue;
-          await service.from("inventory").insert({
-            variant_id: newVariant.id,
-            store_id: sc.storeId,
-            quantity_on_hand: sc.cantidad,
-          });
-          if (sc.cantidad > 0) {
-            await service.from("inventory_movements").insert({
-              variant_id: newVariant.id,
-              store_id: sc.storeId,
-              type: "entrada",
-              quantity_delta: sc.cantidad,
-              reason: "Importación inicial desde Fina",
-              previous_quantity: 0,
-              new_quantity: sc.cantidad,
-              user_id: user.id,
-            });
-          }
-          storeResults.push({ storeName: sc.storeName, previousQty: 0, newQty: sc.cantidad });
-        }
-
-        results.push({
-          item: group.itemNombre,
-          size,
-          candidateSku: variantSku,
-          matchedBy: hasSku ? "sku" : "name",
-          status: "created",
-          storeResults,
-        });
-      } catch (e) {
-        results.push({
-          item: group.itemNombre, size,
-          candidateSku: allCandidates[0] ?? "",
-          status: "error",
-          message: e instanceof Error ? e.message : "Error desconocido",
-        });
-      }
+      const hint = hasSku
+        ? `SKU "${parentSku}" no existe. Se buscó también por nombre.`
+        : `Sin SKU. Se buscó por nombre "${parentNombre}". Verifica los SKUs en Admin → Productos.`;
+      results.push({
+        item: group.itemNombre, size,
+        candidateSku: allCandidates[0] ?? "",
+        status: "not_found",
+        message: hint,
+      });
     }
   }
 
-  const createdCount = results.filter((r) => r.status === "created").length;
-  if (createdCount > 0) {
-    revalidatePath("/admin/productos");
-    revalidatePath("/admin/inventario");
-  }
+  revalidatePath("/admin/inventario");
 
   return NextResponse.json({
     total: results.length,
     updated: results.filter((r) => r.status === "updated").length,
-    created: createdCount,
     notFound: results.filter((r) => r.status === "not_found").length,
     skipped: results.filter((r) => r.status === "skipped").length,
     errors: results.filter((r) => r.status === "error").length,

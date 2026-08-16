@@ -88,7 +88,6 @@ export function FinaNativoImportForm({ stores }: Props) {
   const [step, setStep] = useState<Step>("idle");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [createMissing, setCreateMissing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Mapping step state
@@ -154,7 +153,6 @@ export function FinaNativoImportForm({ stores }: Props) {
 
     const form = new FormData();
     form.append("file", file);
-    form.append("create_missing", String(createMissing));
     form.append("column_mapping", JSON.stringify(mapping));
 
     try {
@@ -288,22 +286,6 @@ export function FinaNativoImportForm({ stores }: Props) {
               Cambiar archivo
             </button>
           </div>
-
-          {/* Create missing toggle (compact) */}
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#EBE4E1] bg-white px-4 py-3 transition-colors hover:border-[#7B1847]/30">
-            <input
-              type="checkbox"
-              checked={createMissing}
-              onChange={(e) => setCreateMissing(e.target.checked)}
-              className="h-4 w-4 accent-[#7B1847]"
-            />
-            <div>
-              <p className="text-sm font-semibold text-[#29252A]">Crear productos que no existan</p>
-              <p className="text-xs text-[#29252A]/40">
-                Crea en borrador los artículos que no encuentre en el catálogo
-              </p>
-            </div>
-          </label>
 
           {/* Mapping table */}
           <div className="flex flex-col gap-2">
@@ -540,10 +522,9 @@ export function FinaNativoImportForm({ stores }: Props) {
           )}
 
           {/* Summary counters */}
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {[
               { label: "Actualizados", value: result.updated, color: "text-emerald-600" },
-              { label: "Creados", value: result.created, color: "text-[#7B1847]" },
               { label: "No encontrados", value: result.notFound, color: "text-amber-600" },
               { label: "Omitidos", value: result.skipped, color: "text-[#29252A]/40" },
               { label: "Errores", value: result.errors, color: "text-red-600" },
@@ -554,33 +535,6 @@ export function FinaNativoImportForm({ stores }: Props) {
               </div>
             ))}
           </div>
-
-          {result.notFound > 0 && !createMissing && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
-              <p className="text-xs text-amber-800">
-                <strong>{result.notFound}</strong> variante(s) no encontradas. Activa{" "}
-                <strong>"Crear productos que no existan"</strong> para importarlas, o verifica los
-                SKUs en <strong>Admin → Productos</strong>.
-              </p>
-            </div>
-          )}
-
-          {result.created > 0 && (
-            <div className="rounded-xl border border-[#F0D8E8] bg-[#FDF8FB] px-4 py-3">
-              <p className="text-xs font-semibold text-[#7B1847]">
-                {result.created} variante(s) nuevas creadas en borrador
-              </p>
-              <p className="mt-1 text-xs text-[#7B1847]/70">
-                Agrégales imágenes y revisa el precio de venta antes de publicarlos.
-              </p>
-              <a
-                href="/admin/productos?estado=draft"
-                className="mt-2.5 inline-flex items-center gap-1 rounded-lg bg-[#7B1847] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#7B1847]/80"
-              >
-                Ver nuevos productos en borrador →
-              </a>
-            </div>
-          )}
 
           {/* Detail table */}
           <button

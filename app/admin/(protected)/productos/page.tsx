@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Search, Package, Plus } from "lucide-react";
+import { Search, Package, Plus, Upload } from "lucide-react";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 
 export const dynamic = "force-dynamic";
@@ -52,8 +52,8 @@ export default async function AdminProductsPage({
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex items-start gap-4">
+        <div className="flex-1">
           <h1 className="text-xl font-bold text-[#29252A]">Productos</h1>
           <p className="mt-0.5 text-sm text-[#29252A]/50">
             {(products ?? []).length} resultado{(products ?? []).length !== 1 ? "s" : ""}
@@ -61,12 +61,20 @@ export default async function AdminProductsPage({
             {q ? ` · "${q}"` : ""}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/productos/nuevo" className="flex items-center gap-1.5">
-            <Plus size={15} />
-            Nuevo producto
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/admin/productos/importar" className="flex items-center gap-1.5">
+              <Upload size={15} />
+              Importar
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/productos/nuevo" className="flex items-center gap-1.5">
+              <Plus size={15} />
+              Nuevo producto
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Search + filters */}
