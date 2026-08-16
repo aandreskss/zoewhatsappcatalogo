@@ -4,9 +4,9 @@ import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { StatusSelect } from "@/components/admin/status-select";
 import { AddVariantForm } from "@/components/admin/add-variant-form";
 import { AddImageForm } from "@/components/admin/add-image-form";
-import { InventoryCell } from "@/components/admin/inventory-cell";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import { DeleteImageButton } from "@/components/admin/delete-image-button";
+import { EditVariantRow } from "@/components/admin/edit-variant-row";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export default async function EditProductPage({
       .order("order"),
     supabase
       .from("product_variants")
-      .select("id, sku, price_usd, compare_at_price_usd, status")
+      .select("id, sku, price_usd, compare_at_price_usd, status, variant_images(image_id, product_images(id, url))")
       .eq("product_id", id),
     supabase.from("stores").select("id, name").eq("active", true).order("name"),
   ]);
@@ -46,7 +46,7 @@ export default async function EditProductPage({
       ? await Promise.all([
           supabase
             .from("variant_option_values")
-            .select("variant_id, product_option_values(value)")
+            .select("variant_id, product_option_values(id, value)")
             .in("variant_id", variantIds),
           supabase
             .from("inventory")
@@ -55,18 +55,33 @@ export default async function EditProductPage({
         ])
       : [{ data: [] }, { data: [] }];
 
-  const labelsByVariant = new Map<string, string[]>();
+  const labelsByVariant = new Map<string, { optionValueId: string; value: string }[]>();
   for (const link of optionLinks ?? []) {
-    const value = link.product_option_values?.value;
-    if (!value) continue;
+    const ov = link.product_option_values;
+    if (!ov || !ov.value) continue;
     const list = labelsByVariant.get(link.variant_id) ?? [];
-    list.push(value);
+    list.push({ optionValueId: ov.id, value: ov.value });
     labelsByVariant.set(link.variant_id, list);
   }
 
   const inventoryByKey = new Map<string, number>();
   for (const row of inventoryRows ?? []) {
     inventoryByKey.set(`${row.variant_id}:${row.store_id}`, row.quantity_on_hand);
+  }
+
+  // Build variant images map
+  const variantImagesMap = new Map<string, { id: string; url: string }[]>();
+  for (const variant of variants ?? []) {
+    const imgs: { id: string; url: string }[] = [];
+    for (const vi of variant.variant_images ?? []) {
+      const img = vi.product_images;
+      if (img && img.id && img.url) {
+        imgs.push({ id: img.id, url: img.url });
+      }
+    }
+    if (imgs.length > 0) {
+      variantImagesMap.set(variant.id, imgs);
+    }
   }
 
   return (
@@ -115,32 +130,37 @@ export default async function EditProductPage({
                       {store.name}
                     </th>
                   ))}
+                  <th className="p-3">Fotos</th>
+                  <th className="p-3">Estado</th>
                 </tr>
               </thead>
               <tbody>
-                {(variants ?? []).map((variant) => (
-                  <tr key={variant.id} className="border-t border-[var(--color-border)]">
-                    <td className="p-3">
-                      {(labelsByVariant.get(variant.id) ?? []).join(" / ") || "—"}
-                    </td>
-                    <td className="p-3 text-[var(--color-muted-foreground)]">
-                      {variant.sku}
-                    </td>
-                    <td className="p-3">${variant.price_usd.toFixed(2)}</td>
-                    {(stores ?? []).map((store) => (
-                      <td key={store.id} className="p-3">
-                        <InventoryCell
-                          variantId={variant.id}
-                          storeId={store.id}
-                          productId={product.id}
-                          initialQuantity={
-                            inventoryByKey.get(`${variant.id}:${store.id}`) ?? 0
-                          }
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {(variants ?? []).map((variant) => {
+                  const inventoryByStore: Record<string, number> = {};
+                  for (const store of stores ?? []) {
+                    const qty = inventoryByKey.get(`${variant.id}:${store.id}`);
+                    if (qty !== undefined) {
+                      inventoryByStore[store.id] = qty;
+                    }
+                  }
+                  return (
+                    <EditVariantRow
+                      key={variant.id}
+                      variant={{
+                        id: variant.id,
+                        sku: variant.sku,
+                        priceUsd: variant.price_usd,
+                        compareAtPriceUsd: variant.compare_at_price_usd,
+                        status: variant.status,
+                      }}
+                      labels={labelsByVariant.get(variant.id) ?? []}
+                      variantImages={variantImagesMap.get(variant.id) ?? []}
+                      stores={stores ?? []}
+                      inventoryByStore={inventoryByStore}
+                      productId={product.id}
+                    />
+                  );
+                })}
               </tbody>
             </table>
           </div>

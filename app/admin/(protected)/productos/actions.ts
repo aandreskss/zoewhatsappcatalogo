@@ -252,6 +252,118 @@ export async function deleteProduct(productId: string): Promise<void> {
   redirect("/admin/productos");
 }
 
+export async function updateVariantFieldsAction(
+  variantId: string,
+  productId: string,
+  fields: {
+    sku?: string;
+    priceUsd?: number;
+    compareAtPriceUsd?: number | null;
+    status?: "active" | "inactive";
+  },
+): Promise<FormState> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  type VariantUpdate = {
+    sku?: string;
+    price_usd?: number;
+    compare_at_price_usd?: number | null;
+    status?: "active" | "inactive";
+  };
+  const update: VariantUpdate = {};
+  if (fields.sku !== undefined) {
+    const sku = fields.sku.trim();
+    if (!sku) return { error: "El SKU no puede estar vacío" };
+    update.sku = sku;
+  }
+  if (fields.priceUsd !== undefined) {
+    if (fields.priceUsd < 0) return { error: "El precio debe ser ≥ 0" };
+    update.price_usd = fields.priceUsd;
+  }
+  if ("compareAtPriceUsd" in fields) update.compare_at_price_usd = fields.compareAtPriceUsd;
+  if (fields.status !== undefined) update.status = fields.status;
+  const { error } = await supabase.from("product_variants").update(update).eq("id", variantId);
+  if (error) return { error: error.message };
+  revalidatePath(`/admin/productos/${productId}`);
+  await revalidateProductPublicPaths(supabase, productId);
+  return { error: null };
+}
+
+export async function updateOptionValueAction(
+  optionValueId: string,
+  productId: string,
+  value: string,
+): Promise<FormState> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const trimmed = value.trim();
+  if (!trimmed) return { error: "El valor no puede estar vacío" };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("product_option_values")
+    .update({ value: trimmed })
+    .eq("id", optionValueId);
+  if (error) return { error: error.message };
+  revalidatePath(`/admin/productos/${productId}`);
+  await revalidateProductPublicPaths(supabase, productId);
+  return { error: null };
+}
+
+export async function addVariantImageAction(
+  variantId: string,
+  productId: string,
+  url: string,
+  altText: string,
+): Promise<FormState> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  // Enforce max 3 images per variant
+  const { count } = await supabase
+    .from("variant_images")
+    .select("*", { count: "exact", head: true })
+    .eq("variant_id", variantId);
+  if ((count ?? 0) >= 3) return { error: "Máximo 3 fotos por variante" };
+  // Insert into product_images first
+  const { data: img, error: imgErr } = await supabase
+    .from("product_images")
+    .insert({ product_id: productId, url, alt_text: altText || "", order: 0, is_primary: false })
+    .select("id")
+    .single();
+  if (imgErr || !img) return { error: imgErr?.message ?? "Error guardando imagen" };
+  // Link to variant
+  const { error: linkErr } = await supabase
+    .from("variant_images")
+    .insert({ variant_id: variantId, image_id: img.id });
+  if (linkErr) return { error: linkErr.message };
+  revalidatePath(`/admin/productos/${productId}`);
+  await revalidateProductPublicPaths(supabase, productId);
+  return { error: null };
+}
+
+export async function removeVariantImageAction(
+  variantId: string,
+  imageId: string,
+  productId: string,
+): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  // Unlink from variant
+  await supabase
+    .from("variant_images")
+    .delete()
+    .eq("variant_id", variantId)
+    .eq("image_id", imageId);
+  // Delete the product_images row if no other variant uses it
+  const { count } = await supabase
+    .from("variant_images")
+    .select("*", { count: "exact", head: true })
+    .eq("image_id", imageId);
+  if ((count ?? 0) === 0) {
+    await supabase.from("product_images").delete().eq("id", imageId);
+  }
+  revalidatePath(`/admin/productos/${productId}`);
+  await revalidateProductPublicPaths(supabase, productId);
+}
+
 export async function setInventoryAction(
   variantId: string,
   storeId: string,

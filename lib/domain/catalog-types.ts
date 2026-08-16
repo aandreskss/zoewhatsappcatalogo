@@ -38,6 +38,7 @@ export interface ProductDetailVariant {
   compareAtPriceUsd: number | null;
   status: "active" | "inactive";
   optionValueIds: string[];
+  images: { url: string; altText: string }[];
 }
 
 export interface ProductDetail {

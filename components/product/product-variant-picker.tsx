@@ -20,10 +20,12 @@ export function ProductVariantPicker({
   product,
   availableByVariant,
   vesRate,
+  onVariantMatch,
 }: {
   product: ProductDetail;
   availableByVariant: Record<string, number>;
   vesRate: number | null;
+  onVariantMatch?: (variantId: string | null) => void;
 }) {
   const router = useRouter();
   const { addItem } = useCart();
@@ -39,6 +41,10 @@ export function ProductVariantPicker({
       variant.optionValueIds.length === selectedValueIds.length &&
       selectedValueIds.every((id) => variant.optionValueIds.includes(id)),
   );
+
+  React.useEffect(() => {
+    onVariantMatch?.(matchedVariant?.id ?? null);
+  }, [matchedVariant?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allOptionsSelected = product.options.every((option) => selected[option.id]);
   const available = matchedVariant ? (availableByVariant[matchedVariant.id] ?? 0) : 0;

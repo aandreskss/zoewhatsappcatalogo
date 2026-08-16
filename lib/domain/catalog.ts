@@ -185,7 +185,8 @@ export async function getPublishedProductBySlug(
        product_images(url, alt_text, order, is_primary),
        product_options(id, name, order, product_option_values(id, value, extra, order)),
        product_variants(id, sku, price_usd, compare_at_price_usd, status,
-         variant_option_values(option_value_id))`,
+         variant_option_values(option_value_id),
+         variant_images(product_images(url, alt_text)))`,
     )
     .eq("slug", slug)
     .eq("status", "published")
@@ -236,6 +237,13 @@ export async function getPublishedProductBySlug(
       compareAtPriceUsd: variant.compare_at_price_usd,
       status: variant.status,
       optionValueIds: (variant.variant_option_values ?? []).map((v) => v.option_value_id),
+      images: (variant.variant_images ?? [])
+        .map((vi) => {
+          const img = vi.product_images;
+          if (!img) return null;
+          return { url: img.url, altText: img.alt_text ?? "" };
+        })
+        .filter((x): x is { url: string; altText: string } => x !== null),
     })),
   };
 }
