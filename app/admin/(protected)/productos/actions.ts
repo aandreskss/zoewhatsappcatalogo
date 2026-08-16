@@ -364,6 +364,46 @@ export async function removeVariantImageAction(
   await revalidateProductPublicPaths(supabase, productId);
 }
 
+export async function deleteVariantAction(
+  variantId: string,
+  productId: string,
+): Promise<FormState> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+
+  // Collect image ids linked to this variant before unlinking
+  const { data: viLinks } = await supabase
+    .from("variant_images")
+    .select("image_id")
+    .eq("variant_id", variantId);
+  const imageIds = (viLinks ?? []).map((l) => l.image_id);
+
+  // Unlink variant images
+  await supabase.from("variant_images").delete().eq("variant_id", variantId);
+
+  // Delete product_images rows that are now orphaned (no other variant uses them)
+  for (const imageId of imageIds) {
+    const { count } = await supabase
+      .from("variant_images")
+      .select("*", { count: "exact", head: true })
+      .eq("image_id", imageId);
+    if ((count ?? 0) === 0) {
+      await supabase.from("product_images").delete().eq("id", imageId);
+    }
+  }
+
+  // Remove option value links and inventory
+  await supabase.from("variant_option_values").delete().eq("variant_id", variantId);
+  await supabase.from("inventory").delete().eq("variant_id", variantId);
+
+  const { error } = await supabase.from("product_variants").delete().eq("id", variantId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/productos/${productId}`);
+  await revalidateProductPublicPaths(supabase, productId);
+  return { error: null };
+}
+
 export async function setInventoryAction(
   variantId: string,
   storeId: string,

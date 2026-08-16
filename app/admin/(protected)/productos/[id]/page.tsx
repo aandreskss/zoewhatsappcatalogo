@@ -132,6 +132,7 @@ export default async function EditProductPage({
                   ))}
                   <th className="p-3">Fotos</th>
                   <th className="p-3">Estado</th>
+                  <th className="p-3"></th>
                 </tr>
               </thead>
               <tbody>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { InventoryCell } from "@/components/admin/inventory-cell";
 import { uploadImage } from "@/lib/storage/upload";
 import {
@@ -9,6 +9,7 @@ import {
   updateOptionValueAction,
   addVariantImageAction,
   removeVariantImageAction,
+  deleteVariantAction,
 } from "@/app/admin/(protected)/productos/actions";
 
 // ---------------------------------------------------------------------------
@@ -144,6 +145,10 @@ export function EditVariantRow({
   const [localStatus, setLocalStatus] = useState<"active" | "inactive">(variant.status);
   const [localImages, setLocalImages] = useState<VariantImage[]>(variantImages);
   const [uploading, setUploading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleted, setIsDeleted] = useState(false);
   const [, startStatusTransition] = useTransition();
   const [, startRemoveTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -183,6 +188,20 @@ export function EditVariantRow({
       setUploading(false);
     }
   }
+
+  async function handleConfirmDelete() {
+    setDeleting(true);
+    const result = await deleteVariantAction(variant.id, productId);
+    setDeleting(false);
+    if (result.error) {
+      setDeleteError(result.error);
+      setConfirmDelete(false);
+    } else {
+      setIsDeleted(true);
+    }
+  }
+
+  if (isDeleted) return null;
 
   return (
     <tr
@@ -312,6 +331,43 @@ export function EditVariantRow({
         >
           {localStatus === "active" ? "Activo" : "Inactivo"}
         </button>
+      </td>
+
+      {/* Column N+3 — Eliminar */}
+      <td className="p-3">
+        {confirmDelete ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-[#29252A]/60 whitespace-nowrap">¿Eliminar?</span>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => void handleConfirmDelete()}
+              className="rounded px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+            >
+              {deleting ? "…" : "Sí"}
+            </button>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => { setConfirmDelete(false); setDeleteError(null); }}
+              className="rounded px-1.5 py-0.5 text-xs font-medium bg-[#F4EFEc] text-[#29252A]/60 hover:bg-[#EBE4E1] transition-colors"
+            >
+              No
+            </button>
+            {deleteError && (
+              <span className="text-[10px] text-red-500">{deleteError}</span>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="flex items-center justify-center rounded p-1 text-[#29252A]/25 hover:bg-red-50 hover:text-red-500 transition-colors"
+            aria-label="Eliminar variante"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
       </td>
     </tr>
   );
