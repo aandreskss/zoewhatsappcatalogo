@@ -39,3 +39,11 @@ export async function toggleCategoryActive(id: string, active: boolean): Promise
   revalidatePath("/admin/categorias");
   revalidatePath("/catalogo");
 }
+
+export async function deleteCategory(id: string): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) throw new Error(error.message.includes("foreign key") ? "Esta categoría tiene productos asociados. Reasígnalos primero." : error.message);
+  revalidatePath("/admin/categorias");
+}

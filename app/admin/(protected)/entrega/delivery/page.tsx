@@ -2,7 +2,8 @@ import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { formatUsd } from "@/lib/domain/pricing";
 import { ShippingZoneForm } from "@/components/admin/shipping-zone-form";
 import { ToggleActive } from "@/components/admin/toggle-active";
-import { toggleShippingZoneActive } from "./actions";
+import { DeleteItemButton } from "@/components/admin/delete-item-button";
+import { toggleShippingZoneActive, deleteShippingZone } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function DeliveryZonesPage() {
               <th className="p-3">Ciudad</th>
               <th className="p-3">Costo</th>
               <th className="p-3">Estado</th>
+              <th className="p-3" />
             </tr>
           </thead>
           <tbody>
@@ -43,12 +45,15 @@ export default async function DeliveryZonesPage() {
                     action={toggleShippingZoneActive}
                   />
                 </td>
+                <td className="p-3">
+                  <DeleteItemButton id={zone.id} action={deleteShippingZone} />
+                </td>
               </tr>
             ))}
             {(zones ?? []).length === 0 ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="p-6 text-center text-[var(--color-muted-foreground)]"
                 >
                   No hay zonas de delivery configuradas.

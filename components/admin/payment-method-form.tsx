@@ -113,6 +113,7 @@ interface Method {
 
 export function PaymentMethodCard({ method }: { method: Method }) {
   const [editing, setEditing] = useState(false);
+  const [localActive, setLocalActive] = useState(method.active);
   const [isPendingToggle, startToggle] = useTransition();
   const [isPendingDelete, startDelete] = useTransition();
 
@@ -122,7 +123,9 @@ export function PaymentMethodCard({ method }: { method: Method }) {
   );
 
   function handleToggle() {
-    startToggle(() => togglePaymentMethodActive(method.id, !method.active));
+    const next = !localActive;
+    setLocalActive(next); // optimistic update
+    startToggle(() => togglePaymentMethodActive(method.id, next));
   }
 
   function handleDelete() {
@@ -185,7 +188,7 @@ export function PaymentMethodCard({ method }: { method: Method }) {
   }
 
   return (
-    <li className={`flex items-start gap-4 rounded-2xl border bg-white p-4 transition-opacity ${!method.active ? "opacity-60" : ""} border-[var(--color-border)]`}>
+    <li className={`flex items-start gap-4 rounded-2xl border bg-white p-4 transition-opacity ${!localActive ? "opacity-60" : ""} border-[var(--color-border)]`}>
       {/* Ícono */}
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
         <CreditCard size={18} className="text-[var(--color-primary)]" />
@@ -214,12 +217,12 @@ export function PaymentMethodCard({ method }: { method: Method }) {
           disabled={isPendingToggle}
           title={method.active ? "Desactivar" : "Activar"}
           className={`relative h-6 w-11 rounded-full transition-colors disabled:opacity-50 ${
-            method.active ? "bg-[var(--color-primary)]" : "bg-[var(--color-border)]"
+            localActive ? "bg-[var(--color-primary)]" : "bg-[var(--color-border)]"
           }`}
         >
           <span
             className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-              method.active ? "translate-x-5" : "translate-x-0.5"
+              localActive ? "translate-x-5" : "translate-x-0.5"
             }`}
           />
         </button>

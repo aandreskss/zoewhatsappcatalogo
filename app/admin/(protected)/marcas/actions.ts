@@ -39,3 +39,11 @@ export async function toggleBrandActive(id: string, active: boolean): Promise<vo
   revalidatePath("/admin/marcas");
   revalidatePath("/catalogo");
 }
+
+export async function deleteBrand(id: string): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("brands").delete().eq("id", id);
+  if (error) throw new Error(error.message.includes("foreign key") ? "Esta marca tiene productos asociados. Reasígnalos primero." : error.message);
+  revalidatePath("/admin/marcas");
+}

@@ -51,3 +51,12 @@ export async function toggleShippingZoneActive(
   revalidatePath("/admin/entrega/delivery");
   revalidatePath("/checkout");
 }
+
+export async function deleteShippingZone(id: string): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("shipping_zones").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/entrega/delivery");
+  revalidatePath("/checkout");
+}

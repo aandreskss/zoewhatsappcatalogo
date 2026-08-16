@@ -1,7 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { SimpleCreateForm } from "@/components/admin/simple-create-form";
 import { ToggleActive } from "@/components/admin/toggle-active";
-import { createCategory, toggleCategoryActive } from "./actions";
+import { DeleteItemButton } from "@/components/admin/delete-item-button";
+import { createCategory, toggleCategoryActive, deleteCategory } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -23,18 +24,21 @@ export default async function CategoriasPage() {
 
       <ul className="flex flex-col divide-y divide-[var(--color-border)] rounded-[var(--radius-lg)] border border-[var(--color-border)]">
         {(categories ?? []).map((category) => (
-          <li key={category.id} className="flex items-center justify-between p-3 text-sm">
-            <div>
+          <li key={category.id} className="flex items-center justify-between gap-3 p-3 text-sm">
+            <div className="min-w-0 flex-1">
               <p className="font-medium">{category.name}</p>
               <p className="text-[var(--color-muted-foreground)]">
                 /categoria/{category.slug}
               </p>
             </div>
-            <ToggleActive
-              id={category.id}
-              active={category.active}
-              action={toggleCategoryActive}
-            />
+            <div className="flex shrink-0 items-center gap-2">
+              <ToggleActive
+                id={category.id}
+                active={category.active}
+                action={toggleCategoryActive}
+              />
+              <DeleteItemButton id={category.id} action={deleteCategory} />
+            </div>
           </li>
         ))}
       </ul>

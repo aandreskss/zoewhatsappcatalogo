@@ -15,6 +15,8 @@ import {
 
 export interface FormState {
   error: string | null;
+  productId?: string;
+  productName?: string;
 }
 
 export async function createProduct(
@@ -69,7 +71,7 @@ export async function createProduct(
   }
 
   revalidatePath("/admin/productos");
-  redirect(`/admin/productos/${product.id}`);
+  return { error: null, productId: product.id, productName: parsed.data.name };
 }
 
 const statusSchema = z.enum(["draft", "published", "hidden", "archived"]);

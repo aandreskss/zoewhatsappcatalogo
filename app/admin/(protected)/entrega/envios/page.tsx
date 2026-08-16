@@ -1,7 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/db/supabase/server";
 import { ShippingCarrierForm } from "@/components/admin/shipping-carrier-form";
 import { ToggleActive } from "@/components/admin/toggle-active";
-import { toggleShippingCarrierActive } from "./actions";
+import { DeleteItemButton } from "@/components/admin/delete-item-button";
+import { toggleShippingCarrierActive, deleteShippingCarrier } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -23,17 +24,20 @@ export default async function ShippingCarriersPage() {
             key={carrier.id}
             className="flex items-center justify-between gap-4 p-3 text-sm"
           >
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-medium">{carrier.name}</p>
               {carrier.notes ? (
                 <p className="text-[var(--color-muted-foreground)]">{carrier.notes}</p>
               ) : null}
             </div>
-            <ToggleActive
-              id={carrier.id}
-              active={carrier.active}
-              action={toggleShippingCarrierActive}
-            />
+            <div className="flex shrink-0 items-center gap-2">
+              <ToggleActive
+                id={carrier.id}
+                active={carrier.active}
+                action={toggleShippingCarrierActive}
+              />
+              <DeleteItemButton id={carrier.id} action={deleteShippingCarrier} />
+            </div>
           </li>
         ))}
         {(carriers ?? []).length === 0 ? (

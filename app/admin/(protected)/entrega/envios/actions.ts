@@ -49,3 +49,11 @@ export async function toggleShippingCarrierActive(
   if (error) throw error;
   revalidatePath("/admin/entrega/envios");
 }
+
+export async function deleteShippingCarrier(id: string): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("shipping_carriers").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/entrega/envios");
+}
