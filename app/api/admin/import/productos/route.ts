@@ -142,11 +142,11 @@ export async function POST(request: Request) {
       let existingProductId: string | null = null;
 
       if (hasSku) {
+        // No filtered by deleted_at: the SKU unique constraint applies to ALL rows
         const { data: ep } = await service
           .from("products")
           .select("id")
           .ilike("sku", parentSku)
-          .is("deleted_at", null)
           .maybeSingle();
         if (ep) existingProductId = ep.id;
       }

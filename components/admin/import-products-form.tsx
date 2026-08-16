@@ -229,13 +229,15 @@ export function ImportProductsForm() {
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      <span className="flex items-center gap-1">
-                        {statusIcon(r)}
-                        <span className={r.status === "created" ? "font-semibold text-[#7B1847]" : ""}>
-                          {statusLabel(r)}
+                      <span className="flex flex-col gap-0.5">
+                        <span className="flex items-center gap-1">
+                          {statusIcon(r)}
+                          <span className={r.status === "created" ? "font-semibold text-[#7B1847]" : ""}>
+                            {statusLabel(r)}
+                          </span>
                         </span>
                         {r.status === "error" && r.message && (
-                          <span className="text-red-400" title={r.message}>ⓘ</span>
+                          <span className="text-[10px] leading-tight text-red-400">{r.message}</span>
                         )}
                       </span>
                     </td>
