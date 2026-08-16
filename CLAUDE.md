@@ -112,17 +112,14 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 
 - **Cloudinary**: subida de imágenes. Dominios `api.cloudinary.com` (connect-src) y `res.cloudinary.com` (img-src) ya en la CSP de `next.config.ts`.
 - **Unsplash**: imágenes de demo. Dominio `images.unsplash.com` ya en `remotePatterns` de `next.config.ts`.
-- **Fina Partner**: sin API pública. Integración vía CSV bidireccional desde `/admin/integraciones/fina`. Ver sección detallada abajo.
+- **Fina Partner**: sin API pública. Integración vía CSV unidireccional (Fina → Zoe) desde `/admin/integraciones/fina`. Ver sección detallada abajo.
 - **Google Search Console**: verificación vía meta tag. El código se guarda en `integrations` con provider `google_search_console` y se inyecta en `generateMetadata()` del root layout.
 
 ## Integración Fina Partner (detalle)
 
-Página: `app/admin/(protected)/integraciones/fina/page.tsx`. Tres modos:
+Página: `app/admin/(protected)/integraciones/fina/page.tsx`. Dos modos (la exportación de pedidos fue eliminada):
 
-### 1 — Exportar pedidos (Zoe → Fina)
-Route: `GET /api/admin/export/pedidos`. Genera CSV con columnas de pedido listas para importar en Fina como ventas/facturas.
-
-### 2 — Importar inventario formato nativo Fina (Fina → Zoe)
+### 1 — Importar inventario formato nativo Fina (Fina → Zoe)
 Route: `POST /api/admin/import/fina-nativo` → `app/api/admin/import/fina-nativo/route.ts`  
 Componente: `components/admin/fina-nativo-import-form.tsx`
 
@@ -152,7 +149,7 @@ Acepta **CSV, XLSX, XLSM, XLS** (usa `xlsx@0.18.5` / SheetJS). Parsea el formato
 
 **Paso de mapeo de columnas:** después de subir el archivo, se muestra una tabla interactiva donde el usuario confirma/corrige qué columna corresponde a qué tienda o campo antes de importar. El mapping se envía como JSON en `column_mapping`. Helpers compartidos en `lib/domain/fina-nativo-helpers.ts`.
 
-### 2b — Importar productos nuevos desde Fina
+### 3 — Importar productos nuevos desde Fina
 Route: `POST /api/admin/import/productos` → `app/api/admin/import/productos/route.ts`  
 Componente: `components/admin/import-products-form.tsx`  
 Página: `/admin/productos/importar`
@@ -167,7 +164,7 @@ Crea productos en borrador a partir del mismo formato CSV de Fina **sin tocar in
 
 **Flujo recomendado:** primero importar productos desde `/admin/productos/importar`, luego sincronizar inventario desde `/admin/integraciones/fina`.
 
-### 3 — Importar inventario CSV plano (formato personalizado)
+### 2 — Importar inventario CSV plano (formato personalizado)
 Route: `POST /api/admin/import/inventario`  
 Componente: `components/admin/fina-import-form.tsx`  
 CSV simple con columnas `sku, cantidad` (acepta aliases). Para ajustes manuales.
