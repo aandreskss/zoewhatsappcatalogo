@@ -14,7 +14,7 @@ import {
 export interface ImportProductResult {
   name: string;
   sku: string;
-  status: "created" | "exists" | "error";
+  status: "created" | "exists" | "restored" | "error";
   variantsCreated?: number;
   message?: string;
 }
@@ -23,6 +23,7 @@ export interface ImportProductsResponse {
   total: number;
   created: number;
   exists: number;
+  restored: number;
   errors: number;
   results: ImportProductResult[];
 }
@@ -138,31 +139,44 @@ export async function POST(request: Request) {
     const hasSku = parentSku.length > 0;
 
     try {
-      // ── Check if product already exists ──────────────────────────────────
+      // ── Check if product already exists (including soft-deleted) ──────────
+      // We must NOT filter deleted_at here: the SKU/variant unique constraints
+      // apply to all rows regardless of deleted_at. If we miss a deleted
+      // product and try to re-create it, the variant SKU inserts will fail.
       let existingProductId: string | null = null;
+      let existingIsDeleted = false;
 
       if (hasSku) {
-        // No filtered by deleted_at: the SKU unique constraint applies to ALL rows
         const { data: ep } = await service
           .from("products")
-          .select("id")
+          .select("id, deleted_at")
           .ilike("sku", parentSku)
           .maybeSingle();
-        if (ep) existingProductId = ep.id;
+        if (ep) { existingProductId = ep.id; existingIsDeleted = !!ep.deleted_at; }
       }
 
       if (!existingProductId) {
-        const { data: ep } = await service
+        // Use limit(1) instead of maybeSingle() — names are not unique-constrained
+        const { data: eps } = await service
           .from("products")
-          .select("id")
+          .select("id, deleted_at")
           .ilike("name", productName)
-          .is("deleted_at", null)
-          .maybeSingle();
-        if (ep) existingProductId = ep.id;
+          .limit(1);
+        const ep = eps?.[0] ?? null;
+        if (ep) { existingProductId = ep.id; existingIsDeleted = !!ep.deleted_at; }
       }
 
       if (existingProductId) {
-        results.push({ name: productName, sku: parentSku, status: "exists" });
+        if (existingIsDeleted) {
+          // Restore: clear soft-delete so the product becomes visible again
+          await service
+            .from("products")
+            .update({ deleted_at: null })
+            .eq("id", existingProductId);
+          results.push({ name: productName, sku: parentSku, status: "restored" });
+        } else {
+          results.push({ name: productName, sku: parentSku, status: "exists" });
+        }
         continue;
       }
 
@@ -253,7 +267,8 @@ export async function POST(request: Request) {
   }
 
   const createdCount = results.filter((r) => r.status === "created").length;
-  if (createdCount > 0) {
+  const restoredCount = results.filter((r) => r.status === "restored").length;
+  if (createdCount > 0 || restoredCount > 0) {
     revalidatePath("/admin/productos");
   }
 
@@ -261,6 +276,7 @@ export async function POST(request: Request) {
     total: results.length,
     created: createdCount,
     exists: results.filter((r) => r.status === "exists").length,
+    restored: restoredCount,
     errors: results.filter((r) => r.status === "error").length,
     results,
   } satisfies ImportProductsResponse);

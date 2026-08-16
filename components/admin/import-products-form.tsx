@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Upload, CheckCircle2, XCircle, AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type {
@@ -82,12 +82,14 @@ export function ImportProductsForm() {
 
   function statusIcon(r: ImportProductResult) {
     if (r.status === "created") return <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />;
+    if (r.status === "restored") return <RotateCcw size={13} className="text-blue-500 shrink-0" />;
     if (r.status === "exists") return <AlertCircle size={13} className="text-amber-500 shrink-0" />;
     return <XCircle size={13} className="text-red-500 shrink-0" />;
   }
 
   function statusLabel(r: ImportProductResult) {
     if (r.status === "created") return `Creado · ${r.variantsCreated ?? 0} talla(s)`;
+    if (r.status === "restored") return "Restaurado";
     if (r.status === "exists") return "Ya existe";
     return "Error";
   }
@@ -175,9 +177,10 @@ export function ImportProductsForm() {
         <div className="flex flex-col gap-4">
 
           {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {[
               { label: "Creados", value: result.created, color: "text-emerald-600" },
+              { label: "Restaurados", value: result.restored, color: "text-blue-600" },
               { label: "Ya existían", value: result.exists, color: "text-amber-600" },
               { label: "Errores", value: result.errors, color: "text-red-600" },
             ].map((s) => (
@@ -189,10 +192,12 @@ export function ImportProductsForm() {
           </div>
 
           {/* Link to drafts */}
-          {result.created > 0 && (
+          {(result.created > 0 || result.restored > 0) && (
             <div className="rounded-xl border border-[#F0D8E8] bg-[#FDF8FB] px-4 py-3">
               <p className="text-xs font-semibold text-[#7B1847]">
-                {result.created} producto(s) creado(s) en borrador
+                {result.created > 0 && `${result.created} producto(s) creado(s)`}
+                {result.created > 0 && result.restored > 0 && " · "}
+                {result.restored > 0 && `${result.restored} producto(s) restaurado(s)`}
               </p>
               <p className="mt-1 text-xs text-[#7B1847]/70">
                 Agrega imágenes y precios de venta antes de publicarlos.
@@ -201,7 +206,7 @@ export function ImportProductsForm() {
                 href="/admin/productos?estado=draft"
                 className="mt-2.5 inline-flex items-center gap-1 rounded-lg bg-[#7B1847] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#7B1847]/80"
               >
-                Ver nuevos productos en borrador →
+                Ver productos en borrador →
               </Link>
             </div>
           )}
