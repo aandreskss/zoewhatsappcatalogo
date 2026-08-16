@@ -202,6 +202,28 @@ Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_mo
 - **Borrado de imágenes**: `deleteImageAction(imageId, productId)`. Si era la imagen principal (`is_primary=true`), promueve automáticamente la siguiente por orden. Componente `DeleteImageButton` (X absoluto sobre el thumbnail, visible en hover).
 - `listPublishedProducts` filtra `status='published'` + `deleted_at IS NULL` + al menos una variante activa.
 
+## Editor de producto — variantes inline (`/admin/productos/[id]`)
+
+Componente: `components/admin/edit-variant-row.tsx` — cada fila de la tabla de variantes es editable directamente sin modal.
+
+**Edición inline (`EditCell`):** clic sobre el valor → input; blur o Enter guarda; Escape revierte. Las celdas editables son:
+- **Talla** — llama a `updateOptionValueAction(optionValueId, productId, value)`
+- **SKU** — llama a `updateVariantFieldsAction(variantId, productId, { sku })`
+- **Precio** — llama a `updateVariantFieldsAction(variantId, productId, { priceUsd })`
+- **Estado** — toggle pill Activo/Inactivo con optimistic update vía `useTransition`
+
+**Fotos por variante:** hasta 3 imágenes por variante. Se suben con `uploadImage` (Cloudinary) y se enlazan vía `addVariantImageAction` → inserta en `product_images` (con `product_id`) y luego en `variant_images` (junction). Para quitar: `removeVariantImageAction` desvincula y elimina la imagen si quedó huérfana.
+
+**Eliminar variante:** `deleteVariantAction(variantId, productId)` en `app/admin/(protected)/productos/actions.ts`:
+1. Desvincula y elimina imágenes huérfanas (`variant_images` → `product_images`)
+2. Elimina `variant_option_values`
+3. Elimina filas de `inventory`
+4. Elimina la variante (`product_variants`)
+- UI: icono basura → confirmación inline "¿Eliminar? Sí / No" → la fila desaparece optimistamente (`isDeleted → return null`)
+- **Diferencia importante:** este `deleteVariantAction` (en `productos/actions.ts`) hace hard-delete real. El homónimo en `inventario/actions.ts` solo pone `status = inactive`.
+
+**Galería pública por variante:** `components/product/product-page-client.tsx` es un Client Island que posee el estado `displayImages`. Cuando el usuario selecciona una talla, `ProductVariantPicker` llama `onVariantMatch(variantId)` → el island intercambia las fotos de la galería por las de esa variante (fallback a imágenes del producto si la variante no tiene fotos). Los datos de imágenes de variante llegan en la query SSR de `getPublishedProductBySlug` vía `variant_images(product_images(url, alt_text))`.
+
 ## Creación de producto — formulario dos fases
 
 `components/admin/new-product-form.tsx` usa un flujo de dos fases sin redirección:
