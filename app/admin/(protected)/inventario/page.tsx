@@ -13,6 +13,7 @@ export default async function InventarioPage() {
       .from("products")
       .select("id, name, status, product_variants(id, sku, barcode, cost_usd, status)")
       .not("status", "eq", "archived")
+      .is("deleted_at", null)
       .order("name"),
   ]);
 
