@@ -287,10 +287,18 @@ export async function POST(request: Request) {
         const c = allCandidates[ci]!;
         const { data } = await service
           .from("product_variants")
-          .select("id")
+          .select("id, product_id")
           .ilike("sku", c)
           .maybeSingle();
-        if (data) {
+        if (!data) continue;
+        // Skip variants whose parent product is soft-deleted
+        const { data: liveProd } = await service
+          .from("products")
+          .select("id")
+          .eq("id", data.product_id)
+          .is("deleted_at", null)
+          .maybeSingle();
+        if (liveProd) {
           variantId = data.id;
           matchedSku = c;
           matchedBy = ci < candidatesBySku.length ? "sku" : "name";
@@ -396,6 +404,7 @@ export async function POST(request: Request) {
               .from("products")
               .select("id")
               .ilike("sku", parentSku)
+              .is("deleted_at", null)
               .maybeSingle();
             if (ep) existingProductId = ep.id;
           }
