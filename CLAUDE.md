@@ -78,6 +78,7 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 | `/admin/pedidos` | Listado y detalle de órdenes |
 | `/admin/clientes` | Directorio de clientes |
 | `/admin/productos` | Catálogo de productos + variantes |
+| `/admin/productos/importar` | Importar productos en borrador desde CSV Fina |
 | `/admin/categorias` | Árbol de categorías |
 | `/admin/marcas` | Gestión de marcas |
 | `/admin/inventario` | Stock por variante y sucursal (inline editable) |
@@ -125,6 +126,8 @@ Route: `GET /api/admin/export/pedidos`. Genera CSV con columnas de pedido listas
 Route: `POST /api/admin/import/fina-nativo` → `app/api/admin/import/fina-nativo/route.ts`  
 Componente: `components/admin/fina-nativo-import-form.tsx`
 
+**Solo actualiza stock de variantes ya existentes** — no crea productos nuevos. Para crear productos usar la sección de abajo.
+
 Acepta **CSV, XLSX, XLSM, XLS** (usa `xlsx@0.18.5` / SheetJS). Parsea el formato jerárquico de Fina:
 - Filas `Tipo=Item` → nombre y SKU del producto padre
 - Filas `Tipo=Variacion` → talla/size individual
@@ -135,7 +138,7 @@ Acepta **CSV, XLSX, XLSM, XLS** (usa `xlsx@0.18.5` / SheetJS). Parsea el formato
 | `Tipo` | `Item` o `Variacion` |
 | `Nombre` | nombre del item / talla de la variación |
 | `SKU` | SKU del item padre (puede estar vacío) |
-| `Categoria` | se mapea a categorías activas por nombre fuzzy |
+| `Categoria` | ignorada en este modo |
 | `Costo unitario` | `cost_usd` de la variante |
 | `Valor en inventario` | precio de venta = valor / cantidad |
 | `Sin ubicación`, `Cualquiera` | siempre ignoradas |
@@ -145,9 +148,24 @@ Acepta **CSV, XLSX, XLSM, XLS** (usa `xlsx@0.18.5` / SheetJS). Parsea el formato
 
 **Fallback store:** Si ninguna columna de tienda es reconocida, se puede seleccionar una tienda destino en el formulario y se usa la columna `Cantidad` total.
 
-**Creación automática de productos** (`create_missing=true` por defecto): si la variante no existe, crea el árbol completo: `products` (status `draft`) → `product_options` (Talla) → `product_option_values` → `product_variants` → `variant_option_values` → `inventory`. El nombre del producto usa el casing original del CSV (no mayúsculas); el SKU de la variante se construye como `{PARENTSKU}-{talla}` o `{PARENTNOMBRE_UPPER}-{talla}`. Se usa `batchCreated` Map para no duplicar el producto padre dentro del mismo lote. Al terminar llama `revalidatePath("/admin/productos")` y `revalidatePath("/admin/inventario")`. El formulario muestra un botón directo a `/admin/productos?estado=draft` cuando se crean productos nuevos.
+**Búsqueda de variantes existentes:** candidatos en orden: `SKU-talla`, `SKU_talla`, `NOMBRE-talla`, `NOMBRE_talla`, `SKU` bare (fallback). Búsqueda con `.ilike()` (case-insensitive). **Importante:** las búsquedas filtran `deleted_at IS NULL` en el producto padre para no matchear contra variantes huérfanas de productos borrados.
 
-**Búsqueda de variantes existentes:** candidatos en orden: `SKU-talla`, `SKU_talla`, `NOMBRE-talla`, `NOMBRE_talla`, `SKU` bare (fallback). Búsqueda con `.ilike()` (case-insensitive).
+**Paso de mapeo de columnas:** después de subir el archivo, se muestra una tabla interactiva donde el usuario confirma/corrige qué columna corresponde a qué tienda o campo antes de importar. El mapping se envía como JSON en `column_mapping`. Helpers compartidos en `lib/domain/fina-nativo-helpers.ts`.
+
+### 2b — Importar productos nuevos desde Fina
+Route: `POST /api/admin/import/productos` → `app/api/admin/import/productos/route.ts`  
+Componente: `components/admin/import-products-form.tsx`  
+Página: `/admin/productos/importar`
+
+Crea productos en borrador a partir del mismo formato CSV de Fina **sin tocar inventario**. Flujo de un solo paso (sin mapping manual):
+- Auto-detecta columnas `Tipo`, `Nombre`, `SKU`, `Categoria`, `Costo unitario`
+- Por cada grupo Item: verifica si el producto ya existe (por SKU o nombre, filtrando `deleted_at IS NULL`)
+- Si no existe: crea árbol completo `products` (status `draft`) → `product_options` (Talla) → `product_option_values` → `product_variants` (price_usd=0, cost_usd del CSV) → `variant_option_values`
+- SKU de variante: `{PARENTSKU}-{talla}` o `{NOMBRE_UPPER}-{talla}`
+- Retorna `{ total, created, exists, errors, results }` — `FinaNativoImportResponse` **no** incluye `created`; el tipo de esta ruta es `ImportProductsResponse`
+- Al terminar enlaza a `/admin/productos?estado=draft`
+
+**Flujo recomendado:** primero importar productos desde `/admin/productos/importar`, luego sincronizar inventario desde `/admin/integraciones/fina`.
 
 ### 3 — Importar inventario CSV plano (formato personalizado)
 Route: `POST /api/admin/import/inventario`  
@@ -183,6 +201,18 @@ Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_mo
 - **Borrado de productos**: soft-delete — se escribe `deleted_at = now()`. Las queries públicas y del admin filtran `.is("deleted_at", null)`. Acción: `deleteProduct(productId)` en `actions.ts`, componente `DeleteProductButton` (variante `"full"` en detalle, `"icon"` en lista).
 - **Borrado de imágenes**: `deleteImageAction(imageId, productId)`. Si era la imagen principal (`is_primary=true`), promueve automáticamente la siguiente por orden. Componente `DeleteImageButton` (X absoluto sobre el thumbnail, visible en hover).
 - `listPublishedProducts` filtra `status='published'` + `deleted_at IS NULL` + al menos una variante activa.
+
+## Creación de producto — formulario dos fases
+
+`components/admin/new-product-form.tsx` usa un flujo de dos fases sin redirección:
+
+1. **Fase 1 — datos**: formulario con nombre, SKU, marca, categoría, género, descripciones, material. La Server Action `createProduct` retorna `{ productId, productName }` en el `FormState` en lugar de llamar a `redirect()`.
+2. **Fase 2 — fotos** (`ImagePhase`): se renderiza en el mismo componente cuando `state.productId` está definido. Llama a `addImageAction` directamente, muestra thumbnails de las fotos guardadas, y ofrece "Ir al producto" + "Crear otro producto".
+
+## Componentes de admin reutilizables
+
+- **`DeleteItemButton`** (`components/admin/delete-item-button.tsx`): botón de borrado con confirmación inline de dos pasos. Primer clic muestra "¿Eliminar? Sí / No"; Sí llama `action(id)` via `useTransition`. Props: `{ id: string; action: (id: string) => Promise<void> }`. Usado en categorías, marcas, zonas de delivery y empresas de envío.
+- **`ToggleActive`**: toggle de activar/desactivar con optimistic update local — siempre actualizar `localActive` con `useState` y sincronizar después con la Server Action, para evitar que el toggle "salte" de vuelta mientras espera la respuesta.
 
 ## Notas sobre la DB de demo
 
