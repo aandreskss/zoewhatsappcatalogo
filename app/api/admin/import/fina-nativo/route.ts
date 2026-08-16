@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import * as XLSX from "xlsx";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getAdminSessionUser } from "@/lib/auth/session";
+import {
+  fileToRows,
+  normalizeHeader,
+  storeMatchesColumn,
+  isKnownNonStore,
+  slugify,
+  findCategoryId,
+  type ColumnRole,
+} from "@/lib/domain/fina-nativo-helpers";
 
-// ── Public types ────────────────────────────────────────────────────────────────
+// ── Public types ─────────────────────────────────────────────────────────────
 
 export interface FinaNativoStoreResult {
   storeName: string;
@@ -16,7 +24,6 @@ export interface FinaNativoRowResult {
   item: string;
   size: string;
   candidateSku: string;
-  /** how the variant/product was found: by sku or by name */
   matchedBy?: "sku" | "name";
   status: "updated" | "created" | "not_found" | "skipped" | "error";
   message?: string;
@@ -30,130 +37,12 @@ export interface FinaNativoImportResponse {
   notFound: number;
   skipped: number;
   errors: number;
-  /** Columns that were recognized as stores: "sede il duomo → Sede Il Duomo" */
   detectedStores: string[];
-  /** Columns that look like stores but have no match in the DB — suggest creating */
   unknownStoreColumns: string[];
   results: FinaNativoRowResult[];
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────────
-
-function normalizeForMatch(s: string): string {
-  return s
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9 ]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeHeader(h: string): string {
-  return normalizeForMatch(h).replace(/\s+/g, "");
-}
-
-function slugify(s: string): string {
-  return s
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
-
-function parseCsvLine(line: string): string[] {
-  const result: string[] = [];
-  let cur = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
-      else inQuotes = !inQuotes;
-    } else if (ch === "," && !inQuotes) {
-      result.push(cur.trim());
-      cur = "";
-    } else {
-      cur += ch;
-    }
-  }
-  result.push(cur.trim());
-  return result;
-}
-
-async function fileToRows(file: File): Promise<string[][]> {
-  const name = file.name.toLowerCase();
-  if (name.endsWith(".xlsx") || name.endsWith(".xlsm") || name.endsWith(".xls")) {
-    const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(new Uint8Array(buffer), { type: "array" });
-    const ws = wb.Sheets[wb.SheetNames[0]!];
-    if (!ws) return [];
-    const raw: (string | number | boolean | null | undefined)[][] =
-      XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-    return raw.map((row) => row.map((cell) => String(cell ?? "").trim()));
-  }
-  const text = await file.text();
-  return text.split(/\r?\n/).filter((l) => l.trim()).map(parseCsvLine);
-}
-
-/**
- * Columns in the Fina export that are NEVER store columns.
- * Normalized (no spaces, no accents, lowercase).
- */
-const KNOWN_NON_STORE_KEYS = new Set([
-  "tipo",
-  "nombre",
-  "sku",
-  "categoria",
-  "costounitario",
-  "unidad",
-  "cantidad",       // total across all stores — used as fallback
-  "sinubicacion",   // explicitly ignored per spec
-  "cualquiera",     // explicitly ignored per spec
-]);
-
-function isKnownNonStore(normKey: string): boolean {
-  if (KNOWN_NON_STORE_KEYS.has(normKey)) return true;
-  // "Valor en inventario" variants → price column, not a store
-  if (normKey.startsWith("valoren") || normKey.startsWith("valorin")) return true;
-  return false;
-}
-
-/**
- * Returns true if a store's name OR code contains at least one significant word (>3 chars)
- * from the CSV column label.  Works even when names vary slightly between exports.
- */
-function storeMatchesColumn(storeName: string, storeCode: string | null, colLabel: string): boolean {
-  const colNorm = normalizeForMatch(colLabel);
-  const words = colNorm.split(" ").filter((w) => w.length > 3);
-  if (words.length === 0) return false;
-  const storeNorm = normalizeForMatch(storeName);
-  if (words.some((w) => storeNorm.includes(w))) return true;
-  if (storeCode) {
-    const codeNorm = normalizeForMatch(storeCode);
-    if (words.some((w) => codeNorm.includes(w))) return true;
-  }
-  return false;
-}
-
-function findCategoryId(
-  finaCategoria: string,
-  categories: Array<{ id: string; name: string }>,
-): string | null {
-  const norm = normalizeForMatch(finaCategoria);
-  if (!norm) return null;
-  const match = categories.find((c) => {
-    const cn = normalizeForMatch(c.name);
-    return cn === norm || cn.includes(norm) || norm.includes(cn);
-  });
-  return match?.id ?? null;
-}
-
-// ── Internal types ──────────────────────────────────────────────────────────────
+// ── Internal types ────────────────────────────────────────────────────────────
 
 interface StoreColMapping {
   colIdx: number;
@@ -164,9 +53,7 @@ interface StoreColMapping {
 
 interface VariationRow {
   size: string;
-  /** cost_usd from "Costo unitario" */
   costo: number | null;
-  /** price_usd derived from "Valor en inventario" / "Cantidad" */
   price: number | null;
   storeCantidades: { storeId: string; storeName: string; cantidad: number }[];
 }
@@ -178,7 +65,7 @@ interface ItemGroup {
   variations: VariationRow[];
 }
 
-// ── Route handler ───────────────────────────────────────────────────────────────
+// ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
   const user = await getAdminSessionUser();
@@ -198,6 +85,17 @@ export async function POST(request: Request) {
   const createMissing = formData.get("create_missing") === "true";
   const fallbackStoreId = (formData.get("fallback_store_id") as string | null)?.trim() || null;
 
+  // Optional explicit column mapping from the UI mapping step
+  const columnMappingRaw = formData.get("column_mapping") as string | null;
+  let explicitMapping: Record<string, ColumnRole> | null = null;
+  if (columnMappingRaw) {
+    try {
+      explicitMapping = JSON.parse(columnMappingRaw) as Record<string, ColumnRole>;
+    } catch {
+      return NextResponse.json({ error: "column_mapping JSON inválido" }, { status: 400 });
+    }
+  }
+
   let rows: string[][];
   try {
     rows = await fileToRows(file);
@@ -214,26 +112,47 @@ export async function POST(request: Request) {
   const rawHeaders = rows[0]!;
   const normHeaders = rawHeaders.map(normalizeHeader);
 
-  const tipoIdx = normHeaders.indexOf("tipo");
-  const nombreIdx = normHeaders.indexOf("nombre");
+  // ── Build column indices ────────────────────────────────────────────────────
+  let tipoIdx = -1, nombreIdx = -1, skuIdx = -1, costoIdx = -1,
+    categoriaIdx = -1, cantidadIdx = -1, valorIdx = -1;
+
+  if (explicitMapping) {
+    for (const [idxStr, role] of Object.entries(explicitMapping)) {
+      const idx = parseInt(idxStr);
+      if (isNaN(idx) || idx < 0 || idx >= rawHeaders.length) continue;
+      if (role.type !== "field") continue;
+      switch (role.field) {
+        case "tipo": tipoIdx = idx; break;
+        case "nombre": nombreIdx = idx; break;
+        case "sku": skuIdx = idx; break;
+        case "categoria": categoriaIdx = idx; break;
+        case "costo_unitario": costoIdx = idx; break;
+        case "valor_inventario": valorIdx = idx; break;
+        case "cantidad": cantidadIdx = idx; break;
+      }
+    }
+  } else {
+    tipoIdx = normHeaders.indexOf("tipo");
+    nombreIdx = normHeaders.indexOf("nombre");
+    skuIdx = normHeaders.indexOf("sku");
+    costoIdx = normHeaders.indexOf("costounitario");
+    categoriaIdx = normHeaders.indexOf("categoria");
+    cantidadIdx = normHeaders.indexOf("cantidad");
+    valorIdx = normHeaders.findIndex(
+      (h) => h.startsWith("valoren") || h.startsWith("valorin"),
+    );
+  }
+
   if (tipoIdx === -1 || nombreIdx === -1) {
     return NextResponse.json(
-      { error: `No es un inventario de Fina válido. Se esperan columnas "Tipo" y "Nombre". Detectadas: ${rawHeaders.join(", ")}` },
+      {
+        error: `No es un inventario de Fina válido. Se esperan columnas "Tipo" y "Nombre". Detectadas: ${rawHeaders.join(", ")}`,
+      },
       { status: 400 },
     );
   }
 
-  const skuIdx = normHeaders.indexOf("sku");
-  const costoIdx = normHeaders.indexOf("costounitario");
-  const categoriaIdx = normHeaders.indexOf("categoria");
-  const cantidadIdx = normHeaders.indexOf("cantidad");
-  // "Valor en inventario" → public selling price (unit price = valor / cantidad)
-  const valorIdx = normHeaders.findIndex(
-    (h) => h.startsWith("valoren") || h.startsWith("valorin"),
-  );
-
   const service = createSupabaseServiceRoleClient();
-
   const [{ data: allStores }, { data: allCategories }] = await Promise.all([
     service.from("stores").select("id, name, code").eq("active", true),
     service.from("categories").select("id, name").eq("active", true),
@@ -241,41 +160,53 @@ export async function POST(request: Request) {
   const stores = allStores ?? [];
   const categories = allCategories ?? [];
 
-  // ── Classify columns: known data | matched store | unknown potential store ──
+  // ── Build store mappings ────────────────────────────────────────────────────
   const storeMappings: StoreColMapping[] = [];
   const unknownStoreColumns: string[] = [];
 
-  for (let i = 0; i < rawHeaders.length; i++) {
-    const normKey = normHeaders[i]!;
-    if (isKnownNonStore(normKey)) continue;
-
-    const matched = stores.find((s) => storeMatchesColumn(s.name, s.code ?? null, rawHeaders[i]!));
-    if (matched) {
-      // Avoid duplicate store mappings (same store mapped from two similar columns)
-      if (!storeMappings.some((m) => m.storeId === matched.id)) {
+  if (explicitMapping) {
+    for (const [idxStr, role] of Object.entries(explicitMapping)) {
+      if (role.type !== "store") continue;
+      const idx = parseInt(idxStr);
+      if (isNaN(idx) || idx < 0 || idx >= rawHeaders.length) continue;
+      storeMappings.push({
+        colIdx: idx,
+        colLabel: rawHeaders[idx]!,
+        storeId: role.storeId,
+        storeName: role.storeName,
+      });
+    }
+  } else {
+    for (let i = 0; i < rawHeaders.length; i++) {
+      const normKey = normHeaders[i]!;
+      if (isKnownNonStore(normKey)) continue;
+      const matched = stores.find((s) =>
+        storeMatchesColumn(s.name, s.code ?? null, rawHeaders[i]!),
+      );
+      if (matched) {
+        if (!storeMappings.some((m) => m.storeId === matched.id)) {
+          storeMappings.push({
+            colIdx: i,
+            colLabel: rawHeaders[i]!,
+            storeId: matched.id,
+            storeName: matched.name,
+          });
+        }
+      } else {
+        unknownStoreColumns.push(rawHeaders[i]!);
+      }
+    }
+    // Fallback: if no store columns detected, use total "Cantidad" for one store
+    if (storeMappings.length === 0 && fallbackStoreId && cantidadIdx !== -1) {
+      const fallbackStore = stores.find((s) => s.id === fallbackStoreId);
+      if (fallbackStore) {
         storeMappings.push({
-          colIdx: i,
-          colLabel: rawHeaders[i]!,
-          storeId: matched.id,
-          storeName: matched.name,
+          colIdx: cantidadIdx,
+          colLabel: "Cantidad (total)",
+          storeId: fallbackStore.id,
+          storeName: fallbackStore.name,
         });
       }
-    } else {
-      // Unknown column — might be a new store
-      unknownStoreColumns.push(rawHeaders[i]!);
-    }
-  }
-
-  // Fallback: if no store columns were detected, use the total "Cantidad" for one store
-  if (storeMappings.length === 0 && fallbackStoreId && cantidadIdx !== -1) {
-    const fallbackStore = stores.find((s) => s.id === fallbackStoreId);
-    if (fallbackStore) {
-      storeMappings.push({
-        colIdx: cantidadIdx,
-        colLabel: "Cantidad (total)",
-        storeId: fallbackStore.id,
-        storeName: fallbackStore.name,
-      });
     }
   }
 
@@ -301,11 +232,12 @@ export async function POST(request: Request) {
       const valorRaw = valorIdx !== -1 ? parseFloat(cols[valorIdx] ?? "") : NaN;
       const cantRaw = cantidadIdx !== -1 ? parseFloat(cols[cantidadIdx] ?? "") : NaN;
 
-      // Unit selling price = "Valor en inventario" / "Cantidad"
-      // (In Fina, "Valor en inventario" at variation level = unit cost × qty)
-      const price = !isNaN(valorRaw) && !isNaN(cantRaw) && cantRaw > 0
-        ? valorRaw / cantRaw
-        : !isNaN(costoRaw) ? costoRaw : null;
+      const price =
+        !isNaN(valorRaw) && !isNaN(cantRaw) && cantRaw > 0
+          ? valorRaw / cantRaw
+          : !isNaN(costoRaw)
+            ? costoRaw
+            : null;
 
       currentGroup.variations.push({
         size: nombre,
@@ -322,12 +254,10 @@ export async function POST(request: Request) {
 
   // ── Process each group ──────────────────────────────────────────────────────
   const results: FinaNativoRowResult[] = [];
-  // Track products / options created in this batch
   const batchCreated = new Map<string, { productId: string; optionId: string }>();
 
   for (const group of groups) {
     const parentSku = group.itemSku.trim().toUpperCase();
-    // Keep original casing for the display name; uppercase only for lookups/SKU building
     const parentNombreRaw = group.itemNombre.trim();
     const parentNombre = parentNombreRaw.toUpperCase();
     const itemKey = parentSku || parentNombre;
@@ -339,10 +269,6 @@ export async function POST(request: Request) {
       const { size, costo, price, storeCantidades } = variation;
       if (!size) continue;
 
-      // Build candidates:
-      // 1. If SKU exists → try by SKU first ({SKU}-{size})
-      // 2. Then by name ({nombre}-{size})
-      // 3. Bare parent SKU as last resort (single-variant products)
       const candidatesBySku: string[] = hasSku
         ? [`${parentSku}-${size}`, `${parentSku}_${size}`]
         : [];
@@ -351,10 +277,8 @@ export async function POST(request: Request) {
         `${parentNombre}_${size}`,
       ];
       const candidatesFallback: string[] = hasSku ? [parentSku] : [];
-
       const allCandidates = [...candidatesBySku, ...candidatesByName, ...candidatesFallback];
 
-      // Try to find existing variant
       let variantId: string | null = null;
       let matchedSku = "";
       let matchedBy: "sku" | "name" = "sku";
@@ -374,7 +298,7 @@ export async function POST(request: Request) {
         }
       }
 
-      // ── CASE 1: variant found → update inventory ─────────────────────────
+      // ── CASE 1: variant found → update inventory ──────────────────────────
       if (variantId) {
         if (costo !== null && costo >= 0) {
           await service.from("product_variants").update({ cost_usd: costo }).eq("id", variantId);
@@ -442,7 +366,7 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // ── CASE 2: not found — report as "not_found" with helpful message ───
+      // ── CASE 2: not found ─────────────────────────────────────────────────
       if (!createMissing) {
         const hint = hasSku
           ? `SKU "${parentSku}" no existe. Se buscó también por nombre.`
@@ -456,7 +380,7 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // ── CASE 3: create product + variant + inventory ─────────────────────
+      // ── CASE 3: create product + variant + inventory ──────────────────────
       try {
         let productId: string;
         let optionId: string;
@@ -466,7 +390,6 @@ export async function POST(request: Request) {
           productId = cached.productId;
           optionId = cached.optionId;
         } else {
-          // Try to find existing product by parent SKU (partial-import case)
           let existingProductId: string | null = null;
           if (hasSku) {
             const { data: ep } = await service
@@ -478,7 +401,6 @@ export async function POST(request: Request) {
           }
 
           if (existingProductId) {
-            // Product exists — find or create "Talla" option
             productId = existingProductId;
             const { data: existingOpt } = await service
               .from("product_options")
@@ -499,7 +421,6 @@ export async function POST(request: Request) {
               optionId = newOpt.id;
             }
           } else {
-            // Create new product — use the original name from Fina, fall back to SKU
             const productName = parentNombreRaw || parentSku;
             const baseSlug = slugify(productName);
             let slug = baseSlug;
@@ -536,7 +457,6 @@ export async function POST(request: Request) {
           batchCreated.set(itemKey, { productId, optionId });
         }
 
-        // Option value for this size
         const { data: newOptVal, error: ovErr } = await service
           .from("product_option_values")
           .insert({ option_id: optionId, value: size, order: group.variations.indexOf(variation) + 1 })
@@ -544,10 +464,7 @@ export async function POST(request: Request) {
           .single();
         if (ovErr || !newOptVal) throw new Error(ovErr?.message ?? "Error creando talla");
 
-        // Variant — price_usd from "Valor en inventario" / "Cantidad"
-        const variantSku = hasSku
-          ? `${parentSku}-${size}`
-          : `${parentNombre}-${size}`;
+        const variantSku = hasSku ? `${parentSku}-${size}` : `${parentNombre}-${size}`;
 
         const { data: newVariant, error: varErr } = await service
           .from("product_variants")
@@ -562,13 +479,11 @@ export async function POST(request: Request) {
           .single();
         if (varErr || !newVariant) throw new Error(varErr?.message ?? "Error creando variante");
 
-        // Link variant ↔ option value
         await service.from("variant_option_values").insert({
           variant_id: newVariant.id,
           option_value_id: newOptVal.id,
         });
 
-        // Inventory per store
         const storeResults: FinaNativoStoreResult[] = [];
         for (const sc of storeCantidades) {
           if (sc.cantidad < 0) continue;
