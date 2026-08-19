@@ -176,13 +176,20 @@ CSV simple con columnas `sku, cantidad` (acepta aliases). Para ajustes manuales.
 Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_movements` (audit trail). Los tipos de movimiento son: `entrada | salida | ajuste | transferencia | venta | liberacion`. Todo ajuste manual crea un registro en `inventory_movements`.
 
 **Tabla de inventario (`/admin/inventario`):** `components/admin/inventory-table.tsx`
-- Vista agrupada por producto: header por cada producto (nombre + stock total + tallas) con sus variantes/tallas indentadas debajo, igual que el CSV de Fina.
+- Vista agrupada por producto: header por cada producto (nombre + stock total + tallas + pill de margen promedio) con sus variantes indentadas debajo.
 - Columnas por sucursal dinámicas según tiendas activas en DB.
 - `StockCell`: edición inline con guardado al perder foco (onBlur) o al presionar Enter. Muestra botón ✓ cuando el valor es distinto al guardado. Callback `onSaved` actualiza el Total de la fila en tiempo real sin recargar.
-- `CostCell`: igual pero para `cost_usd`, solo guarda en onBlur.
+- `PriceCell`: edición inline de `price_usd` vía `updateVariantPriceAction`. Guarda en onBlur. Revalida `/admin/inventario` y la página del producto.
+- `CostCell`: edición inline de `cost_usd` vía `updateCostAction`. Guarda en onBlur. Revalida `/admin/inventario` y la página del producto.
+- `MarginBadge`: muestra `+$X` y `Y%` de margen bruto (`(precio - costo) / precio`). Verde ≥ 30%, amarillo ≥ 15%, rojo < 15%. Aparece en cada variante y el header de producto muestra el promedio.
 - Total reactivo: `InventoryTable` mantiene `stockOverrides: Map<variantId:storeId, qty>` y lo suma sobre los valores del servidor al renderizar el total de cada fila y del header de producto.
 - **Borrado a dos niveles**: botón 🗑️ en el header del producto (soft-delete: `deleted_at = now()` vía `deleteProductFromInventoryAction`) y botón 🗑️ por variante individual (`status = inactive` vía `deleteVariantAction`). Ambos con confirmación inline de dos pasos. La fila desaparece del cliente inmediatamente sin recargar.
-- Actions en `app/admin/(protected)/inventario/actions.ts`: `updateInventoryAction`, `updateCostAction`, `getMovementsAction`, `deleteVariantAction`, `deleteProductFromInventoryAction`.
+- Actions en `app/admin/(protected)/inventario/actions.ts`: `updateInventoryAction`, `updateCostAction`, `updateVariantPriceAction`, `getMovementsAction`, `deleteVariantAction`, `deleteProductFromInventoryAction`.
+
+**Sincronización precio/costo entre módulos:**
+- Editar `price_usd` desde inventario → revalida también `/admin/productos/[id]`
+- Editar `cost_usd` desde inventario → revalida también `/admin/productos/[id]`
+- Editar `price_usd`, `cost_usd` o `barcode` desde el editor de producto → revalida también `/admin/inventario`
 
 ## Sistema de banners y secciones del Home
 
@@ -199,15 +206,29 @@ Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_mo
 - **Borrado de imágenes**: `deleteImageAction(imageId, productId)`. Si era la imagen principal (`is_primary=true`), promueve automáticamente la siguiente por orden. Componente `DeleteImageButton` (X absoluto sobre el thumbnail, visible en hover).
 - `listPublishedProducts` filtra `status='published'` + `deleted_at IS NULL` + al menos una variante activa.
 
-## Editor de producto — variantes inline (`/admin/productos/[id]`)
+## Editor de producto — página `/admin/productos/[id]`
 
+### Panel de información general
+Componente: `components/admin/edit-product-info-form.tsx` — formulario con todos los campos del producto, editable en cualquier momento.
+
+Campos editables: nombre, SKU del producto, marca, categoría, género, descripción corta, descripción completa, material, checkbox "Nuevo", título SEO y meta descripción.
+
+Action: `updateProductInfoAction(productId, _prev, formData)` en `productos/actions.ts`. Si el nombre cambia, regenera el slug con `generateUniqueSlug` y registra el redirect con `recordSlugChangeIfNeeded`. Usa `useActionState` + `useRef` para mostrar "Guardado" solo tras la primera submisión (no en el render inicial).
+
+### Variantes inline
 Componente: `components/admin/edit-variant-row.tsx` — cada fila de la tabla de variantes es editable directamente sin modal.
 
 **Edición inline (`EditCell`):** clic sobre el valor → input; blur o Enter guarda; Escape revierte. Las celdas editables son:
 - **Talla** — llama a `updateOptionValueAction(optionValueId, productId, value)`
 - **SKU** — llama a `updateVariantFieldsAction(variantId, productId, { sku })`
 - **Precio** — llama a `updateVariantFieldsAction(variantId, productId, { priceUsd })`
+- **Costo** — llama a `updateVariantFieldsAction(variantId, productId, { costUsd })`
+- **Código** (`barcode`) — llama a `updateVariantFieldsAction(variantId, productId, { barcode })`
 - **Estado** — toggle pill Activo/Inactivo con optimistic update vía `useTransition`
+
+`updateVariantFieldsAction` acepta `{ sku, priceUsd, compareAtPriceUsd, costUsd, barcode, status }` y revalida tanto `/admin/productos/[id]` como `/admin/inventario`.
+
+**`InventoryCell`** (`components/admin/inventory-cell.tsx`): celda de cantidad por tienda dentro del editor de producto. Usa `savedQty` ref (no la prop `initialQuantity`) para detectar cambios reales. Guarda en blur o Enter, muestra borde amarillo + botón ✓ cuando hay valor pendiente, revierte y muestra borde rojo si el save falla.
 
 **Fotos por variante:** hasta 3 imágenes por variante. Se suben con `uploadImage` (Cloudinary) y se enlazan vía `addVariantImageAction` → inserta en `product_images` (con `product_id`) y luego en `variant_images` (junction). Para quitar: `removeVariantImageAction` desvincula y elimina la imagen si quedó huérfana.
 
