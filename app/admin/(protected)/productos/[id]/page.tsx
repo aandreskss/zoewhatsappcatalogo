@@ -7,6 +7,7 @@ import { AddImageForm } from "@/components/admin/add-image-form";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import { DeleteImageButton } from "@/components/admin/delete-image-button";
 import { EditVariantRow } from "@/components/admin/edit-variant-row";
+import { EditProductInfoForm } from "@/components/admin/edit-product-info-form";
 
 export const dynamic = "force-dynamic";
 
@@ -20,13 +21,13 @@ export default async function EditProductPage({
 
   const { data: product } = await supabase
     .from("products")
-    .select("id, name, slug, sku, status")
+    .select("id, name, slug, sku, status, brand_id, category_id, gender, description_short, description, material, is_new, seo_title, seo_description")
     .eq("id", id)
     .maybeSingle();
 
   if (!product) notFound();
 
-  const [{ data: images }, { data: variants }, { data: stores }] = await Promise.all([
+  const [{ data: images }, { data: variants }, { data: stores }, { data: brands }, { data: categories }] = await Promise.all([
     supabase
       .from("product_images")
       .select("id, url, alt_text, order")
@@ -37,6 +38,8 @@ export default async function EditProductPage({
       .select("id, sku, price_usd, compare_at_price_usd, status, variant_images(image_id, product_images(id, url))")
       .eq("product_id", id),
     supabase.from("stores").select("id, name").eq("active", true).order("name"),
+    supabase.from("brands").select("id, name").eq("active", true).order("name"),
+    supabase.from("categories").select("id, name").order("name"),
   ]);
 
   const variantIds = (variants ?? []).map((v) => v.id);
@@ -98,6 +101,28 @@ export default async function EditProductPage({
           <StatusSelect productId={product.id} status={product.status} />
         </div>
       </div>
+
+      <section className="rounded-2xl border border-[#EBE4E1] bg-white p-5 shadow-[0_1px_3px_rgba(41,37,42,0.06)]">
+        <h2 className="mb-4 text-base font-semibold text-[#29252A]">Información general</h2>
+        <EditProductInfoForm
+          productId={product.id}
+          product={{
+            name: product.name,
+            sku: product.sku,
+            brand_id: product.brand_id,
+            category_id: product.category_id,
+            gender: product.gender,
+            description_short: product.description_short,
+            description: product.description,
+            material: product.material,
+            is_new: product.is_new,
+            seo_title: product.seo_title,
+            seo_description: product.seo_description,
+          }}
+          brands={brands ?? []}
+          categories={categories ?? []}
+        />
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Imágenes</h2>

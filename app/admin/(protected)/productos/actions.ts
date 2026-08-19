@@ -95,6 +95,77 @@ export async function updateProductStatus(
   await revalidateProductPublicPaths(supabase, productId);
 }
 
+export async function updateProductInfoAction(
+  productId: string,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdminUser(["super_admin", "admin"]);
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return { error: "El nombre es obligatorio" };
+
+  const parsed = productSchema.omit({ slug: true, status: true, tags: true, isFeatured: true, isBestseller: true }).safeParse({
+    name,
+    sku: formData.get("sku") || null,
+    brandId: formData.get("brandId") || null,
+    categoryId: formData.get("categoryId") || null,
+    gender: formData.get("gender") || null,
+    descriptionShort: formData.get("descriptionShort") || null,
+    description: formData.get("description") || null,
+    material: formData.get("material") || null,
+    isNew: formData.get("isNew") === "on",
+    seoTitle: formData.get("seoTitle") || null,
+    seoDescription: formData.get("seoDescription") || null,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  const { data: current, error: currentError } = await supabase
+    .from("products")
+    .select("slug, name")
+    .eq("id", productId)
+    .single();
+  if (currentError) return { error: currentError.message };
+
+  let newSlug = current.slug;
+  if (parsed.data.name !== current.name) {
+    newSlug = await generateUniqueSlug(supabase, "products", parsed.data.name);
+  }
+
+  const { error } = await supabase
+    .from("products")
+    .update({
+      name: parsed.data.name,
+      slug: newSlug,
+      sku: parsed.data.sku,
+      brand_id: parsed.data.brandId,
+      category_id: parsed.data.categoryId,
+      gender: parsed.data.gender,
+      description_short: parsed.data.descriptionShort,
+      description: parsed.data.description,
+      material: parsed.data.material,
+      is_new: parsed.data.isNew,
+      seo_title: parsed.data.seoTitle,
+      seo_description: parsed.data.seoDescription,
+    })
+    .eq("id", productId);
+
+  if (error) return { error: error.message };
+
+  if (newSlug !== current.slug) {
+    await recordSlugChangeIfNeeded(supabase, "product", productId, current.slug, newSlug);
+  }
+
+  revalidatePath(`/admin/productos/${productId}`);
+  await revalidateProductPublicPaths(supabase, productId);
+  return { error: null };
+}
+
 export async function updateProductName(
   productId: string,
   name: string,
