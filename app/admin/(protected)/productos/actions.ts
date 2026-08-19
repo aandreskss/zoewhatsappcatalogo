@@ -330,6 +330,8 @@ export async function updateVariantFieldsAction(
     sku?: string;
     priceUsd?: number;
     compareAtPriceUsd?: number | null;
+    costUsd?: number | null;
+    barcode?: string | null;
     status?: "active" | "inactive";
   },
 ): Promise<FormState> {
@@ -339,6 +341,8 @@ export async function updateVariantFieldsAction(
     sku?: string;
     price_usd?: number;
     compare_at_price_usd?: number | null;
+    cost_usd?: number | null;
+    barcode?: string | null;
     status?: "active" | "inactive";
   };
   const update: VariantUpdate = {};
@@ -352,10 +356,13 @@ export async function updateVariantFieldsAction(
     update.price_usd = fields.priceUsd;
   }
   if ("compareAtPriceUsd" in fields) update.compare_at_price_usd = fields.compareAtPriceUsd;
+  if ("costUsd" in fields) update.cost_usd = fields.costUsd;
+  if ("barcode" in fields) update.barcode = fields.barcode ?? null;
   if (fields.status !== undefined) update.status = fields.status;
   const { error } = await supabase.from("product_variants").update(update).eq("id", variantId);
   if (error) return { error: error.message };
   revalidatePath(`/admin/productos/${productId}`);
+  revalidatePath("/admin/inventario");
   await revalidateProductPublicPaths(supabase, productId);
   return { error: null };
 }

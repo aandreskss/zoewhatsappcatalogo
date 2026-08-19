@@ -5,6 +5,7 @@ import { Search, History, X, AlertCircle, Check, Trash2 } from "lucide-react";
 import {
   updateInventoryAction,
   updateCostAction,
+  updateVariantPriceAction,
   getMovementsAction,
   deleteVariantAction,
   deleteProductFromInventoryAction,
@@ -17,6 +18,7 @@ export interface VariantRow {
   variantLabel: string;
   sku: string;
   barcode: string | null;
+  priceUsd: number;
   costUsd: number | null;
   stockByStore: Record<string, number>;
   totalStock: number;
@@ -134,6 +136,39 @@ function CostCell({
       disabled={saving}
       placeholder="—"
       className="w-20 rounded-lg border border-[#EBE4E1] bg-white px-2 py-1 text-right text-sm tabular-nums outline-none transition-colors hover:border-[#C9748A]/40 focus:ring-2 focus:ring-[#C9748A]/25 disabled:opacity-40 placeholder:text-[#29252A]/30"
+    />
+  );
+}
+
+// ── Inline price cell ─────────────────────────────────────────────────────────
+function PriceCell({
+  variantId,
+  initialPrice,
+}: {
+  variantId: string;
+  initialPrice: number;
+}) {
+  const [raw, setRaw] = useState(String(initialPrice));
+  const [saving, setSaving] = useState(false);
+
+  async function handleBlur() {
+    const parsed = raw.trim() === "" ? 0 : Number(raw);
+    if (parsed === initialPrice || isNaN(parsed)) return;
+    setSaving(true);
+    await updateVariantPriceAction(variantId, parsed);
+    setSaving(false);
+  }
+
+  return (
+    <input
+      type="number"
+      min={0}
+      step="0.01"
+      value={raw}
+      onChange={(e) => setRaw(e.target.value)}
+      onBlur={handleBlur}
+      disabled={saving}
+      className="w-20 rounded-lg border border-[#EBE4E1] bg-white px-2 py-1 text-right text-sm tabular-nums outline-none transition-colors hover:border-[#C9748A]/40 focus:ring-2 focus:ring-[#C9748A]/25 disabled:opacity-40"
     />
   );
 }
@@ -353,8 +388,8 @@ export function InventoryTable({
 
   const lowStockCount = rows.filter((r) => r.totalStock === 0).length;
 
-  // Total columns: Talla + SKU + Código(hidden) + Costo + stores + Total + Actions
-  const totalCols = 6 + stores.length;
+  // Total columns: Talla + SKU + Código(hidden) + Precio + Costo + stores + Total + Actions
+  const totalCols = 7 + stores.length;
 
   return (
     <>
@@ -397,6 +432,7 @@ export function InventoryTable({
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Talla / Variante</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">SKU</th>
                 <th className="hidden px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40 lg:table-cell">Código</th>
+                <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Precio $</th>
                 <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Costo $</th>
                 {stores.map((s) => (
                   <th key={s.id} className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
@@ -485,6 +521,11 @@ export function InventoryTable({
 
                           {/* Barcode */}
                           <td className="hidden px-4 py-2.5 font-mono text-xs text-[#29252A]/40 lg:table-cell">{row.barcode ?? "—"}</td>
+
+                          {/* Price */}
+                          <td className="px-4 py-2.5 text-right">
+                            <PriceCell variantId={row.variantId} initialPrice={row.priceUsd} />
+                          </td>
 
                           {/* Cost */}
                           <td className="px-4 py-2.5 text-right">

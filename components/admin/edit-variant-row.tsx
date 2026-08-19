@@ -30,8 +30,10 @@ interface Props {
   variant: {
     id: string;
     sku: string;
+    barcode: string | null;
     priceUsd: number;
     compareAtPriceUsd: number | null;
+    costUsd: number | null;
     status: "active" | "inactive";
   };
   labels: OptionLabel[];
@@ -258,7 +260,35 @@ export function EditVariantRow({
         />
       </td>
 
-      {/* Columns 4..N — Inventory per store */}
+      {/* Column 4 — Costo */}
+      <td className="p-3 text-[#29252A]/60">
+        <EditCell
+          value={variant.costUsd !== null ? String(variant.costUsd) : ""}
+          type="number"
+          format={(v) => (v ? `$${parseFloat(v).toFixed(2)}` : "—")}
+          onSave={(v) => {
+            const n = v.trim() === "" ? null : parseFloat(v);
+            if (n !== null && (isNaN(n) || n < 0)) return Promise.resolve("Costo inválido");
+            return updateVariantFieldsAction(variant.id, productId, { costUsd: n }).then(
+              (r) => r.error,
+            );
+          }}
+        />
+      </td>
+
+      {/* Column 5 — Código */}
+      <td className="p-3 text-[#29252A]/60">
+        <EditCell
+          value={variant.barcode ?? ""}
+          onSave={(v) =>
+            updateVariantFieldsAction(variant.id, productId, { barcode: v.trim() || null }).then(
+              (r) => r.error,
+            )
+          }
+        />
+      </td>
+
+      {/* Columns 6..N — Inventory per store */}
       {stores.map((store) => (
         <td key={store.id} className="p-3">
           <InventoryCell

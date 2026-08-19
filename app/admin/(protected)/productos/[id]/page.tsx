@@ -35,7 +35,7 @@ export default async function EditProductPage({
       .order("order"),
     supabase
       .from("product_variants")
-      .select("id, sku, price_usd, compare_at_price_usd, status, variant_images(image_id, product_images(id, url))")
+      .select("id, sku, barcode, price_usd, compare_at_price_usd, cost_usd, status, variant_images(image_id, product_images(id, url))")
       .eq("product_id", id),
     supabase.from("stores").select("id, name").eq("active", true).order("name"),
     supabase.from("brands").select("id, name").eq("active", true).order("name"),
@@ -150,6 +150,8 @@ export default async function EditProductPage({
                   <th className="p-3">Variante</th>
                   <th className="p-3">SKU</th>
                   <th className="p-3">Precio</th>
+                  <th className="p-3">Costo</th>
+                  <th className="p-3">Código</th>
                   {(stores ?? []).map((store) => (
                     <th key={store.id} className="p-3">
                       {store.name}
@@ -175,8 +177,10 @@ export default async function EditProductPage({
                       variant={{
                         id: variant.id,
                         sku: variant.sku,
+                        barcode: variant.barcode ?? null,
                         priceUsd: variant.price_usd,
                         compareAtPriceUsd: variant.compare_at_price_usd,
+                        costUsd: variant.cost_usd ?? null,
                         status: variant.status,
                       }}
                       labels={labelsByVariant.get(variant.id) ?? []}

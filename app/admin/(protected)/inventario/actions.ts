@@ -65,7 +65,39 @@ export async function updateCostAction(
     .eq("id", variantId);
   if (error) return { error: error.message };
 
+  const { data: variant } = await supabase
+    .from("product_variants")
+    .select("product_id")
+    .eq("id", variantId)
+    .maybeSingle();
+
   revalidatePath("/admin/inventario");
+  if (variant?.product_id) revalidatePath(`/admin/productos/${variant.product_id}`);
+  return { error: null };
+}
+
+export async function updateVariantPriceAction(
+  variantId: string,
+  priceUsd: number,
+): Promise<{ error: string | null }> {
+  await requireAdminUser(["super_admin", "admin", "inventory"]);
+  if (priceUsd < 0) return { error: "El precio debe ser ≥ 0" };
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("product_variants")
+    .update({ price_usd: priceUsd })
+    .eq("id", variantId);
+  if (error) return { error: error.message };
+
+  const { data: variant } = await supabase
+    .from("product_variants")
+    .select("product_id")
+    .eq("id", variantId)
+    .maybeSingle();
+
+  revalidatePath("/admin/inventario");
+  if (variant?.product_id) revalidatePath(`/admin/productos/${variant.product_id}`);
   return { error: null };
 }
 

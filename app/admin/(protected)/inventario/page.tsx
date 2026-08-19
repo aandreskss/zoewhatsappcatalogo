@@ -11,7 +11,7 @@ export default async function InventarioPage() {
     supabase.from("stores").select("id, name, code").eq("active", true).order("name"),
     supabase
       .from("products")
-      .select("id, name, status, product_variants(id, sku, barcode, cost_usd, status)")
+      .select("id, name, status, product_variants(id, sku, barcode, price_usd, cost_usd, status)")
       .not("status", "eq", "archived")
       .is("deleted_at", null)
       .order("name"),
@@ -70,6 +70,7 @@ export default async function InventarioPage() {
         variantLabel: (labelsByVariant.get(variant.id) ?? []).join(" / ") || "—",
         sku: variant.sku,
         barcode: variant.barcode ?? null,
+        priceUsd: variant.price_usd,
         costUsd: variant.cost_usd ?? null,
         stockByStore,
         totalStock,
