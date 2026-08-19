@@ -173,6 +173,35 @@ function PriceCell({
   );
 }
 
+// ── Margin helper ─────────────────────────────────────────────────────────────
+function calcMargin(priceUsd: number, costUsd: number | null) {
+  if (costUsd === null || priceUsd <= 0) return null;
+  const profit = priceUsd - costUsd;
+  const pct = (profit / priceUsd) * 100;
+  return { profit, pct };
+}
+
+function MarginBadge({ priceUsd, costUsd }: { priceUsd: number; costUsd: number | null }) {
+  const m = calcMargin(priceUsd, costUsd);
+  if (!m) return <span className="text-xs text-[#29252A]/25">—</span>;
+
+  const color =
+    m.pct >= 30
+      ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+      : m.pct >= 15
+      ? "text-amber-700 bg-amber-50 border-amber-200"
+      : "text-red-700 bg-red-50 border-red-200";
+
+  return (
+    <div className={`inline-flex flex-col items-end rounded-lg border px-2 py-1 tabular-nums ${color}`}>
+      <span className="text-xs font-semibold leading-tight">
+        {m.profit >= 0 ? "+" : ""}${Math.abs(m.profit).toFixed(2)}
+      </span>
+      <span className="text-[10px] leading-tight opacity-75">{m.pct.toFixed(1)}%</span>
+    </div>
+  );
+}
+
 // ── Movements modal ────────────────────────────────────────────────────────────
 type Movement = {
   id: string;
@@ -388,8 +417,8 @@ export function InventoryTable({
 
   const lowStockCount = rows.filter((r) => r.totalStock === 0).length;
 
-  // Total columns: Talla + SKU + Código(hidden) + Precio + Costo + stores + Total + Actions
-  const totalCols = 7 + stores.length;
+  // Total columns: Talla + SKU + Código(hidden) + Precio + Costo + Ganancia + stores + Total + Actions
+  const totalCols = 8 + stores.length;
 
   return (
     <>
@@ -434,6 +463,7 @@ export function InventoryTable({
                 <th className="hidden px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40 lg:table-cell">Código</th>
                 <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Precio $</th>
                 <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Costo $</th>
+                <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">Ganancia</th>
                 {stores.map((s) => (
                   <th key={s.id} className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40">
                     {s.code ?? s.name}
@@ -450,6 +480,23 @@ export function InventoryTable({
                 const isDeletingThisProduct = deletingProductId === group.productId;
                 const isConfirmingThisProduct = confirmDeleteProductId === group.productId;
 
+                const withCost = group.variants.filter((v) => v.costUsd !== null);
+                const avgMargin =
+                  withCost.length > 0
+                    ? withCost.reduce((sum, v) => {
+                        const m = calcMargin(v.priceUsd, v.costUsd);
+                        return sum + (m?.pct ?? 0);
+                      }, 0) / withCost.length
+                    : null;
+                const avgMarginColor =
+                  avgMargin === null
+                    ? ""
+                    : avgMargin >= 30
+                    ? "bg-emerald-100 text-emerald-700"
+                    : avgMargin >= 15
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-red-100 text-red-700";
+
                 return (
                   <>
                     {/* ── Product header row ────────────────────────────────── */}
@@ -465,6 +512,11 @@ export function InventoryTable({
                           <span className="text-xs text-[#29252A]/40">
                             {group.variants.length} talla{group.variants.length !== 1 ? "s" : ""}
                           </span>
+                          {avgMargin !== null && (
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${avgMarginColor}`}>
+                              ~{avgMargin.toFixed(0)}% margen
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-right">
@@ -530,6 +582,11 @@ export function InventoryTable({
                           {/* Cost */}
                           <td className="px-4 py-2.5 text-right">
                             <CostCell variantId={row.variantId} initialCost={row.costUsd} />
+                          </td>
+
+                          {/* Margin */}
+                          <td className="px-4 py-2.5 text-right">
+                            <MarginBadge priceUsd={row.priceUsd} costUsd={row.costUsd} />
                           </td>
 
                           {/* Stock per store */}
