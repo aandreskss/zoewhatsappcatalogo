@@ -84,6 +84,7 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 | `/admin/inventario` | Stock por variante y sucursal (inline editable) |
 | `/admin/finanzas/monedas` | Tasas de cambio |
 | `/admin/finanzas/metodos-pago` | Métodos de pago |
+| `/admin/entrega/sucursales` | Crear, editar, activar y eliminar sucursales |
 | `/admin/entrega/pickup` | Config de retiro/delivery |
 | `/admin/entrega/delivery` | Zonas de delivery |
 | `/admin/entrega/envios` | Envíos |
@@ -240,7 +241,7 @@ Componente: `components/admin/edit-variant-row.tsx` — cada fila de la tabla de
 - UI: icono basura → confirmación inline "¿Eliminar? Sí / No" → la fila desaparece optimistamente (`isDeleted → return null`)
 - **Diferencia importante:** este `deleteVariantAction` (en `productos/actions.ts`) hace hard-delete real. El homónimo en `inventario/actions.ts` solo pone `status = inactive`.
 
-**Galería pública por variante:** `components/product/product-page-client.tsx` es un Client Island que posee el estado `displayImages`. Cuando el usuario selecciona una talla, `ProductVariantPicker` llama `onVariantMatch(variantId)` → el island intercambia las fotos de la galería por las de esa variante (fallback a imágenes del producto si la variante no tiene fotos). Los datos de imágenes de variante llegan en la query SSR de `getPublishedProductBySlug` vía `variant_images(product_images(url, alt_text))`.
+**Galería pública por variante:** `components/product/product-page-client.tsx` es un Client Island con dos estados: `displayImages` (qué set de imágenes mostrar) y `selectedIndex` (cuál imagen está activa). Cuando el usuario selecciona una talla, `ProductVariantPicker` llama `onVariantMatch(variantId)` → el island intercambia las fotos y resetea `selectedIndex` a 0 (fallback a imágenes del producto si la variante no tiene fotos). El strip de miniaturas muestra **todas** las imágenes del set actual; cada miniatura es un `<button>` con `onClick={() => setSelectedIndex(i)}` y la activa recibe `ring-2 ring-[var(--color-primary)]`. El strip solo se renderiza si hay más de 1 imagen. Los datos de imágenes de variante llegan en la query SSR de `getPublishedProductBySlug` vía `variant_images(product_images(url, alt_text))`.
 
 ## Creación de producto — formulario dos fases
 
@@ -248,6 +249,31 @@ Componente: `components/admin/edit-variant-row.tsx` — cada fila de la tabla de
 
 1. **Fase 1 — datos**: formulario con nombre, SKU, marca, categoría, género, descripciones, material. La Server Action `createProduct` retorna `{ productId, productName }` en el `FormState` en lugar de llamar a `redirect()`.
 2. **Fase 2 — fotos** (`ImagePhase`): se renderiza en el mismo componente cuando `state.productId` está definido. Llama a `addImageAction` directamente, muestra thumbnails de las fotos guardadas, y ofrece "Ir al producto" + "Crear otro producto".
+
+## Sucursales (`/admin/entrega/sucursales`)
+
+Gestión completa de tiendas físicas. La tabla `stores` es la fuente de verdad para el inventario por tienda, el checkout (retiro/delivery) y los horarios de atención.
+
+**Archivos clave:**
+- `app/admin/(protected)/entrega/sucursales/page.tsx` — lista activas/inactivas
+- `app/admin/(protected)/entrega/sucursales/actions.ts` — Server Actions
+- `components/admin/create-store-form.tsx` — formulario inline de creación
+- `components/admin/store-card.tsx` — card con edición inline, toggles y borrado
+- `components/admin/store-fields.tsx` — campos compartidos entre create y edit
+
+**Campos de la tabla `stores`:** `name`, `code` (texto corto único, e.g. "CTR"), `slug` (auto desde name), `address`, `city`, `state`, `phone`, `whatsapp`, `google_maps_url`, `lat`, `lng`, `pickup_enabled`, `delivery_enabled`, `active`.
+
+**Actions disponibles:**
+- `createStore` — requiere `super_admin` o `admin`; genera `slug` automáticamente desde el nombre
+- `updateStore(id, ...)` — edita todos los campos; regenera `slug` si cambia el nombre
+- `toggleStoreActive(id, active)` — activa/desactiva la sucursal
+- `toggleStorePickup(id, pickup_enabled)` — habilita/deshabilita retiro en tienda
+- `toggleStoreDelivery(id, delivery_enabled)` — habilita/deshabilita delivery
+- `deleteStore(id)` — hard-delete, requiere `super_admin`; el borrado falla si hay pedidos u horarios referenciando la tienda (FK constraint)
+
+Todas las actions revalidan `/admin/entrega/sucursales`, `/admin/entrega/pickup` y `/admin/entrega/horarios`.
+
+**Nota:** el `code` de la tienda es el campo que usa la importación Fina para detectar columnas de inventario (`storeMatchesColumn`). Si se crea una sucursal nueva, el `code` debe coincidir con la columna del CSV de Fina.
 
 ## Componentes de admin reutilizables
 
@@ -295,3 +321,13 @@ Los textos y datos de contacto por defecto viven en `lib/domain/site-content-typ
 - `customer-tags-editor` — editor de etiquetas con autocompletado
 
 El detalle de pedido (`/admin/pedidos/[id]`) incluye enlace "Ver perfil de cliente →" al perfil del CRM.
+
+## Cuentas de infraestructura
+
+| Servicio | Cuenta |
+|---|---|
+| **Vercel** | `andresksz66` |
+| **Supabase** | `andresksz66@gmail.com` |
+| **GitHub** | `aandreskss` (repo `zoewhatsappcatalogo`) |
+
+URL del sitio: `https://zoecatalogo.vercel.app`
