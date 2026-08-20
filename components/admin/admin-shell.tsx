@@ -16,6 +16,7 @@ import {
   DollarSign,
   CreditCard,
   Store,
+  Building2,
   MapPin,
   Truck,
   Clock,
@@ -78,6 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Logística",
     items: [
+      { href: "/admin/entrega/sucursales", label: "Sucursales", icon: Building2 },
       { href: "/admin/entrega/pickup", label: "Retiro / Delivery", icon: Store },
       { href: "/admin/entrega/delivery", label: "Zonas de delivery", icon: MapPin },
       { href: "/admin/entrega/envios", label: "Envíos", icon: Truck },

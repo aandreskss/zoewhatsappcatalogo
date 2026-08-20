@@ -40,6 +40,7 @@ export function ProductPageClient({
   );
 
   const [displayImages, setDisplayImages] = useState<DisplayImage[]>(productImages);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const handleVariantMatch = useCallback(
     (variantId: string | null) => {
@@ -49,13 +50,14 @@ export function ProductPageClient({
       } else {
         setDisplayImages(productImages);
       }
+      setSelectedIndex(0);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
-  const primaryImage = displayImages[0] ?? null;
-  const thumbnails = displayImages.slice(1, 4);
+  const primaryImage = displayImages[selectedIndex] ?? displayImages[0] ?? null;
+  const thumbnails = displayImages;
 
   return (
     <div className="grid grid-cols-1 gap-8 pb-16 md:grid-cols-2 md:gap-12 lg:gap-20">
@@ -104,16 +106,22 @@ export function ProductPageClient({
         </div>
 
         {/* Thumbnail strip */}
-        {thumbnails.length > 0 && (
+        {thumbnails.length > 1 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {thumbnails.map((img, i) => (
-              <div
+              <button
                 key={i}
-                className="relative shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-surface)]"
+                type="button"
+                onClick={() => setSelectedIndex(i)}
+                className={`relative shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-surface)] transition-opacity ${
+                  i === selectedIndex
+                    ? "ring-2 ring-[var(--color-primary)] opacity-100"
+                    : "opacity-60 hover:opacity-100"
+                }`}
                 style={{ width: "80px", aspectRatio: "3/4" }}
               >
                 <Image src={img.url} alt={img.altText} fill className="object-cover" />
-              </div>
+              </button>
             ))}
           </div>
         )}
