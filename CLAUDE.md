@@ -52,17 +52,24 @@ Los tipos son **manuales**, no auto-generados. Cuando se agrega un campo a la DB
 - `lib/domain/integrations.ts` — `IntegrationProvider` type, lista paralela que debe coincidir
 
 ### Clientes de Supabase
-- `createSupabaseServerClient()` → usa `cookies()` → fuerza renderizado dinámico. **Nunca** llamar desde el root layout ni desde páginas con ISR.
-- `createSupabaseServiceRoleClient()` → **no** llama a `cookies()`, seguro en layout raíz y en `generateMetadata()`. Omite RLS — solo usar en servidor con datos públicos o en acciones autorizadas.
+- `createSupabaseServerClient()` → usa `cookies()` → fuerza renderizado dinámico. **Nunca** llamar desde el root layout ni desde páginas con ISR. En el admin, solo se usa en los archivos de MFA (`mfa/*`), seguridad (`seguridad/page.tsx`, `seguridad/actions.ts`) y el layout protegido — todos necesitan `supabase.auth.*` con la sesión real del usuario.
+- `createSupabaseServiceRoleClient()` → **no** llama a `cookies()`, omite RLS por completo. Es la opción correcta para **todas** las pages y actions del admin `(protected)/**` (la autorización ya la hace `requireAdminUser()` en código).
+
+**Patrón del admin (desde migración de perf 2026-08-22):**
+- Todas las `page.tsx` y `actions.ts` bajo `(protected)/` usan `createSupabaseServiceRoleClient()`.
+- `getAdminSessionUser()` (`lib/auth/session.ts`) usa `createSupabaseServerClient()` solo para `auth.getUser()` (verificar JWT via cookies) y luego `createSupabaseServiceRoleClient()` para leer `user_roles` — esto evita el bloqueo de RLS sobre `user_roles` que impedía a usuarios no-super_admin cargar sus roles.
+- Excepciones que conservan `createSupabaseServerClient()`: `layout.tsx`, `seguridad/page.tsx`, `seguridad/actions.ts`, `mfa/enroll/*`, `mfa/challenge/*`.
 
 ### Seguridad
 - Precio, stock, rol y total siempre se recalculan en servidor antes de crear un pedido.
 - RLS activo en todas las tablas de negocio. La clave `anon` solo lee catálogo publicado.
 - `SUPABASE_SERVICE_ROLE_KEY` es secreto de servidor — nunca exponer al cliente.
 - CSP configurado en `next.config.ts`. Al integrar un nuevo servicio externo, agregar su dominio a `connect-src` e `img-src` según corresponda.
+- Migración `0025_fix_user_roles_read_own.sql`: agrega policy `user_read_own_roles` en `user_roles` — defensa en profundidad para que usuarios autenticados lean sus propias filas vía RLS.
 
 ### Server Actions
 - Siempre empezar con `await requireAdminUser([...roles])` antes de cualquier mutación.
+- Después del check, usar `createSupabaseServiceRoleClient()` para todas las operaciones de DB.
 - Usar `revalidatePath()` al final para invalidar el caché de la página afectada.
 
 ### Roles disponibles
