@@ -1,5 +1,8 @@
 import "server-only";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import {
+  createSupabaseServerClient,
+  createSupabaseServiceRoleClient,
+} from "@/lib/db/supabase/server";
 
 export type AppRole = "super_admin" | "admin" | "inventory" | "sales";
 
@@ -31,7 +34,8 @@ export async function getAdminSessionUser(): Promise<AdminSessionUser | null> {
 
   if (!user) return null;
 
-  const { data: roleRows } = await supabase
+  const service = createSupabaseServiceRoleClient();
+  const { data: roleRows } = await service
     .from("user_roles")
     .select("store_id, roles(name)")
     .eq("user_id", user.id);
