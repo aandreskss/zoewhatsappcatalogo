@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import Link from "next/link";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { formatUsd } from "@/lib/domain/pricing";
 import { ORDER_STATUS_LABELS } from "@/lib/domain/order-status";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -25,7 +25,7 @@ export default async function AdminOrdersPage({
   searchParams: Promise<{ estado?: string; q?: string }>;
 }) {
   const { estado, q } = await searchParams;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   let query = supabase
     .from("orders")

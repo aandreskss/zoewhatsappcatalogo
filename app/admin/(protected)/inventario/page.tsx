@@ -1,11 +1,11 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { InventoryTable, type VariantRow } from "@/components/admin/inventory-table";
 import { Layers } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function InventarioPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const [{ data: stores }, { data: products }] = await Promise.all([
     supabase.from("stores").select("id, name, code").eq("active", true).order("name"),

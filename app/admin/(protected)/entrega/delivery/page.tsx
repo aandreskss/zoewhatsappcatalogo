@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { formatUsd } from "@/lib/domain/pricing";
 import { ShippingZoneForm } from "@/components/admin/shipping-zone-form";
 import { ToggleActive } from "@/components/admin/toggle-active";
@@ -8,7 +8,7 @@ import { toggleShippingZoneActive, deleteShippingZone } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function DeliveryZonesPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: zones } = await supabase
     .from("shipping_zones")
     .select("id, name, city, cost_usd, active")

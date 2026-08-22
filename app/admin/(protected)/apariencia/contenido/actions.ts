@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 import type { SiteContent, NavLink } from "@/lib/domain/site-content-types";
 import type { Json } from "@/lib/db/supabase/types";
@@ -58,7 +58,7 @@ export async function saveSiteContent(
     navLinks,
   };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("company_settings")
     .upsert({ key: "site_content", value: content as unknown as Json });

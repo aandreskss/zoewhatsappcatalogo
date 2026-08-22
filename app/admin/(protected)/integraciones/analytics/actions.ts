@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 import type { Json } from "@/lib/db/supabase/types";
 
@@ -51,7 +51,7 @@ export async function saveIntegration(
   const configKey = PROVIDER_CONFIG_KEY[provider];
   const publicConfig = configValue ? { [configKey]: configValue } : {};
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("integrations").upsert(
     {
       provider,

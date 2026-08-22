@@ -1,9 +1,6 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { getAdminSessionUser } from "@/lib/auth/session";
-import {
-  createSupabaseServerClient,
-  createSupabaseServiceRoleClient,
-} from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { UserRoleEditor, type AssignedRole } from "@/components/admin/user-role-editor";
 import { Users } from "lucide-react";
 
@@ -15,7 +12,6 @@ export default async function UsuariosPage() {
     redirect("/admin");
   }
 
-  const supabase = await createSupabaseServerClient();
   const service = createSupabaseServiceRoleClient();
 
   // Fetch all auth users (email, last_sign_in_at, created_at)
@@ -24,23 +20,23 @@ export default async function UsuariosPage() {
   } = await service.auth.admin.listUsers({ perPage: 200 });
 
   // Fetch profiles
-  const { data: profiles } = await supabase
+  const { data: profiles } = await service
     .from("profiles")
     .select("id, full_name, active");
 
   // Fetch all user_roles with role name + store name
-  const { data: userRolesRaw } = await supabase
+  const { data: userRolesRaw } = await service
     .from("user_roles")
     .select("id, user_id, store_id, roles(id, name), stores(name)");
 
   // Fetch all roles (for the selector)
-  const { data: roles } = await supabase
+  const { data: roles } = await service
     .from("roles")
     .select("id, name")
     .order("name");
 
   // Fetch active stores (for scope selection)
-  const { data: stores } = await supabase
+  const { data: stores } = await service
     .from("stores")
     .select("id, name, code")
     .eq("active", true)

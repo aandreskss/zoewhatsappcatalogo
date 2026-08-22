@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getSiteContent } from "@/lib/domain/site-content";
 import { getAdminSessionUser } from "@/lib/auth/session";
 import { ContentForm } from "@/components/admin/content-form";
@@ -12,7 +12,7 @@ export default async function ContenidoPage() {
       <p className="text-sm text-[var(--color-muted-foreground)]">Sin acceso.</p>
     );
   }
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const content = await getSiteContent(supabase);
 
   return (

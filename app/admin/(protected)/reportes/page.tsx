@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  * en la Fase 9 (Analítica) sobre `analytics_events`.
  */
 export default async function ReportesPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const [{ data: withoutResults }, { data: recent }] = await Promise.all([
     supabase
       .from("search_logs")

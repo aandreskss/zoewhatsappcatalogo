@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import {
   getAllCurrentRates,
   getRecentFetchLogs,
@@ -23,7 +23,7 @@ const PAIR_LABEL: Record<string, string> = {
  * cliente (sección 44, riesgos comerciales).
  */
 export default async function MonedasPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const [rates, logs, reference] = await Promise.all([
     getAllCurrentRates(supabase),
     getRecentFetchLogs(supabase),

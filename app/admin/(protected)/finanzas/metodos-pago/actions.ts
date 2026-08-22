@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 
 export interface FormState {
@@ -26,7 +26,7 @@ export async function createPaymentMethod(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("payment_methods").insert({
     name: parsed.data.name,
     instructions: parsed.data.instructions ?? null,
@@ -42,7 +42,7 @@ export async function togglePaymentMethodActive(
   active: boolean,
 ): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("payment_methods")
     .update({ active })
@@ -65,7 +65,7 @@ export async function updatePaymentMethod(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("payment_methods")
     .update({ name: parsed.data.name, instructions: parsed.data.instructions ?? null })
@@ -78,7 +78,7 @@ export async function updatePaymentMethod(
 
 export async function deletePaymentMethod(id: string): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("payment_methods").delete().eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/finanzas/metodos-pago");

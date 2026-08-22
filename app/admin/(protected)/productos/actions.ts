@@ -1,9 +1,9 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 import { productSchema, variantSchema } from "@/lib/validation/catalog";
 import {
@@ -45,7 +45,7 @@ export async function createProduct(
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const slug = await generateUniqueSlug(supabase, "products", parsed.data.name);
 
   const { data: product, error } = await supabase
@@ -83,7 +83,7 @@ export async function updateProductStatus(
   await requireAdminUser(["super_admin", "admin"]);
   const parsedStatus = statusSchema.parse(status);
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("products")
     .update({ status: parsedStatus })
@@ -123,7 +123,7 @@ export async function updateProductInfoAction(
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: current, error: currentError } = await supabase
     .from("products")
@@ -174,7 +174,7 @@ export async function updateProductName(
   const trimmed = name.trim();
   if (trimmed.length === 0) return { error: "El nombre no puede quedar vacío" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: current, error: currentError } = await supabase
     .from("products")
@@ -220,7 +220,7 @@ export async function addVariantAction(
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   try {
     await createVariantWithOptions(supabase, {
@@ -253,7 +253,7 @@ export async function addImageAction(
 
   const altText = String(formData.get("altText") ?? "").trim();
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { count } = await supabase
     .from("product_images")
@@ -279,7 +279,7 @@ export async function deleteImageAction(
   productId: string,
 ): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   // Si era la imagen principal, promover la siguiente
   const { data: img } = await supabase
@@ -313,7 +313,7 @@ export async function deleteImageAction(
 
 export async function deleteProduct(productId: string): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("products")
     .update({ deleted_at: new Date().toISOString() })
@@ -336,7 +336,7 @@ export async function updateVariantFieldsAction(
   },
 ): Promise<FormState> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   type VariantUpdate = {
     sku?: string;
     price_usd?: number;
@@ -375,7 +375,7 @@ export async function updateOptionValueAction(
   await requireAdminUser(["super_admin", "admin"]);
   const trimmed = value.trim();
   if (!trimmed) return { error: "El valor no puede estar vacío" };
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("product_option_values")
     .update({ value: trimmed })
@@ -393,7 +393,7 @@ export async function addVariantImageAction(
   altText: string,
 ): Promise<FormState> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   // Enforce max 3 images per variant
   const { count } = await supabase
     .from("variant_images")
@@ -423,7 +423,7 @@ export async function removeVariantImageAction(
   productId: string,
 ): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   // Unlink from variant
   await supabase
     .from("variant_images")
@@ -447,7 +447,7 @@ export async function deleteVariantAction(
   productId: string,
 ): Promise<FormState> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   // Collect image ids linked to this variant before unlinking
   const { data: viLinks } = await supabase
@@ -493,7 +493,7 @@ export async function setInventoryAction(
     throw new Error("La cantidad debe ser un entero >= 0");
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: existing } = await supabase
     .from("inventory")

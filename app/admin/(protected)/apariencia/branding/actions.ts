@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 import { themeTokensToJson } from "@/lib/domain/theme";
 
@@ -46,7 +46,7 @@ export async function saveTheme(
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: existing } = await supabase
     .from("themes")

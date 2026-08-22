@@ -1,5 +1,5 @@
-import { requireAdminUser } from "@/lib/auth/session";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { requireAdminUser } from "@/lib/auth/session";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getCronJobsHealth, getRecentErrorReports } from "@/lib/domain/health";
 import {
   Card,
@@ -36,7 +36,7 @@ export default async function SaludPage() {
     );
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const [cronJobs, errorReports] = await Promise.all([
     getCronJobsHealth(supabase),
     getRecentErrorReports(supabase),

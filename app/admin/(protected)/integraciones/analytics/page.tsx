@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { IntegrationForm } from "@/components/admin/integration-form";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +51,7 @@ const PROVIDERS = [
  * integración que no funcionaría.
  */
 export default async function AnalyticsIntegrationsPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data } = await supabase
     .from("integrations")
     .select("provider, public_config, active")

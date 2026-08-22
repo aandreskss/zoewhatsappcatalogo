@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { formatUsd } from "@/lib/domain/pricing";
 import { orderStatusLabel } from "@/lib/domain/order-status";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -22,7 +22,7 @@ export default async function AdminCustomerProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: customer } = await supabase
     .from("customers")

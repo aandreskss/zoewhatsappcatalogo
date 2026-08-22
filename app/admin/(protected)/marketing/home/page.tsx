@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { HomeSectionForm } from "@/components/admin/home-section-form";
 import { HomeSectionRow } from "@/components/admin/home-section-row";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * para cada uno de los 12 tipos de bloque.
  */
 export default async function HomeSectionsPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: sections } = await supabase
     .from("home_sections")
     .select("id, type, title, active")

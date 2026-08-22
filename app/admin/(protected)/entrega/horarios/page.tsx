@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { StoreHoursRow } from "@/components/admin/store-hours-row";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ const DAY_LABELS = [
  * todavía — el primer "Guardar" la crea (`upsert`).
  */
 export default async function StoreHoursPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: stores } = await supabase
     .from("stores")
     .select("id, name")

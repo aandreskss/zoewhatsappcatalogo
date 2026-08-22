@@ -1,11 +1,11 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { ToggleActive } from "@/components/admin/toggle-active";
 import { toggleStorePickup, toggleStoreDelivery } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function PickupConfigPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: stores } = await supabase
     .from("stores")
     .select("id, name, pickup_enabled, delivery_enabled, active")

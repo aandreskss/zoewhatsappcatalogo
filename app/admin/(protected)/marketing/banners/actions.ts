@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 
 export interface FormState {
@@ -38,7 +38,7 @@ export async function createBanner(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("banners").insert({
     name: parsed.data.name,
     image_desktop_url: parsed.data.imageDesktopUrl || null,
@@ -58,7 +58,7 @@ export async function createBanner(
 
 export async function toggleBannerActive(id: string, active: boolean): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("banners").update({ active }).eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/marketing/banners");

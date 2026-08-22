@@ -1,11 +1,11 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { StoreCard } from "@/components/admin/store-card";
 import { CreateStoreForm } from "@/components/admin/create-store-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function StoresPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: stores } = await supabase
     .from("stores")
     .select(

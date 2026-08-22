@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import Link from "next/link";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { formatUsd } from "@/lib/domain/pricing";
 import { CustomerSegmentBadge } from "@/components/admin/customer-segment-badge";
 import {
@@ -33,7 +33,7 @@ export default async function AdminCustomersPage({
   searchParams: Promise<{ q?: string; segmento?: string; orden?: string }>;
 }) {
   const { q, segmento, orden } = await searchParams;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const sortCol =
     orden === "gasto" ? "total_spent_usd" :

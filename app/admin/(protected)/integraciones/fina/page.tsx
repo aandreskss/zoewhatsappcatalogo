@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { FinaImportForm } from "@/components/admin/fina-import-form";
 import { FinaNativoImportForm } from "@/components/admin/fina-nativo-import-form";
 import { Download } from "lucide-react";
@@ -6,7 +6,7 @@ import { Download } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function FinaIntegrationPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: stores } = await supabase
     .from("stores")
     .select("id, name, code")

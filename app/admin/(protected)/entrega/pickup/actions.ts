@@ -1,7 +1,7 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 
 /**
@@ -13,7 +13,7 @@ import { requireAdminUser } from "@/lib/auth/session";
  */
 export async function toggleStorePickup(id: string, enabled: boolean): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("stores")
     .update({ pickup_enabled: enabled })
@@ -25,7 +25,7 @@ export async function toggleStorePickup(id: string, enabled: boolean): Promise<v
 
 export async function toggleStoreDelivery(id: string, enabled: boolean): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("stores")
     .update({ delivery_enabled: enabled })

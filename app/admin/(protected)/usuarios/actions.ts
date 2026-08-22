@@ -1,11 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { getAdminSessionUser } from "@/lib/auth/session";
-import {
-  createSupabaseServerClient,
-  createSupabaseServiceRoleClient,
-} from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 
 async function requireSuperAdmin() {
   const user = await getAdminSessionUser();
@@ -23,7 +20,7 @@ export async function assignRole(
   try {
     await requireSuperAdmin();
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseServiceRoleClient();
 
     // Look up role UUID by name
     const { data: role } = await supabase
@@ -55,7 +52,7 @@ export async function assignRole(
 export async function removeRole(userRoleId: string): Promise<{ error: string | null }> {
   try {
     await requireSuperAdmin();
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseServiceRoleClient();
 
     const { error } = await supabase
       .from("user_roles")

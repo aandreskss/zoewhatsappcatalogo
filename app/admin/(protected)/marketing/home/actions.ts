@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 import type { Json } from "@/lib/db/supabase/types";
 
@@ -67,7 +67,7 @@ export async function createHomeSection(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: maxOrderRow } = await supabase
     .from("home_sections")
@@ -96,7 +96,7 @@ export async function toggleHomeSectionActive(
   active: boolean,
 ): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("home_sections").update({ active }).eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/marketing/home");
@@ -105,7 +105,7 @@ export async function toggleHomeSectionActive(
 
 export async function deleteHomeSection(id: string): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("home_sections").delete().eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/marketing/home");
@@ -122,7 +122,7 @@ export async function moveHomeSection(
   direction: "up" | "down",
 ): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: sections, error } = await supabase
     .from("home_sections")

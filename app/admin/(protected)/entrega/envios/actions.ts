@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 
 export interface FormState {
@@ -26,7 +26,7 @@ export async function createShippingCarrier(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("shipping_carriers")
     .insert({ name: parsed.data.name, notes: parsed.data.notes ?? null });
@@ -41,7 +41,7 @@ export async function toggleShippingCarrierActive(
   active: boolean,
 ): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("shipping_carriers")
     .update({ active })
@@ -52,7 +52,7 @@ export async function toggleShippingCarrierActive(
 
 export async function deleteShippingCarrier(id: string): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("shipping_carriers").delete().eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/entrega/envios");

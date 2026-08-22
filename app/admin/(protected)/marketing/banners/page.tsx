@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { BannerForm } from "@/components/admin/banner-form";
 import { ToggleActive } from "@/components/admin/toggle-active";
 import { toggleBannerActive } from "./actions";
@@ -6,7 +6,7 @@ import { toggleBannerActive } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function BannersPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: banners } = await supabase
     .from("banners")
     .select("id, name, position, headline, priority, active")

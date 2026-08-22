@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 import { generateUniqueSlug } from "@/lib/domain/admin-catalog";
 
@@ -21,7 +21,7 @@ export async function createBrand(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const slug = await generateUniqueSlug(supabase, "brands", parsed.data);
 
   const { error } = await supabase.from("brands").insert({ name: parsed.data, slug });
@@ -33,7 +33,7 @@ export async function createBrand(
 
 export async function toggleBrandActive(id: string, active: boolean): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("brands").update({ active }).eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/marcas");
@@ -42,7 +42,7 @@ export async function toggleBrandActive(id: string, active: boolean): Promise<vo
 
 export async function deleteBrand(id: string): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("brands").delete().eq("id", id);
   if (error) throw new Error(error.message.includes("foreign key") ? "Esta marca tiene productos asociados. Reasígnalos primero." : error.message);
   revalidatePath("/admin/marcas");

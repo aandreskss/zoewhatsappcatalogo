@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { StatusSelect } from "@/components/admin/status-select";
 import { AddVariantForm } from "@/components/admin/add-variant-form";
 import { AddImageForm } from "@/components/admin/add-image-form";
@@ -17,7 +17,7 @@ export default async function EditProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: product } = await supabase
     .from("products")

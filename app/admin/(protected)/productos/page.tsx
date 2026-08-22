@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import Link from "next/link";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Search, Package, Plus, Upload } from "lucide-react";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
@@ -27,7 +27,7 @@ export default async function AdminProductsPage({
   searchParams: Promise<{ q?: string; estado?: string }>;
 }) {
   const { q, estado } = await searchParams;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   let query = supabase
     .from("products")

@@ -1,10 +1,10 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { PaymentMethodForm, PaymentMethodCard } from "@/components/admin/payment-method-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaymentMethodsPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: methods } = await supabase
     .from("payment_methods")
     .select("id, name, instructions, active")

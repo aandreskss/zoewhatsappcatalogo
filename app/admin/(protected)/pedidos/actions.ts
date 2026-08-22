@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 
 const ORDER_STATUSES = [
@@ -29,7 +29,7 @@ export async function changeOrderStatus(
   const admin = await requireAdminUser(["super_admin", "admin", "sales"]);
   const parsedStatus = statusSchema.parse(nextStatus);
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
@@ -104,7 +104,7 @@ export async function addOrderNote(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Nota inválida" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("order_notes")
     .insert({ order_id: orderId, user_id: admin.id, note: parsed.data });

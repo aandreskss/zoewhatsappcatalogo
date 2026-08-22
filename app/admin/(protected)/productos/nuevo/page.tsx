@@ -1,10 +1,10 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { NewProductForm } from "@/components/admin/new-product-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewProductPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const [{ data: brands }, { data: categories }] = await Promise.all([
     supabase.from("brands").select("id, name").order("name"),
     supabase.from("categories").select("id, name").order("name"),

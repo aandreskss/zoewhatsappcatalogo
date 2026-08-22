@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 
 const noteSchema = z.string().trim().min(1, "La nota no puede estar vacía").max(1000);
@@ -22,7 +22,7 @@ export async function addCustomerNote(
   if (!parsedNote.success)
     return { error: parsedNote.error.issues[0]?.message ?? "Nota inválida" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("customer_notes")
     .insert({ customer_id: customerId, user_id: admin.id, note: parsedNote.data });
@@ -37,7 +37,7 @@ export async function assignTag(customerId: string, tagId: string): Promise<void
   uuidSchema.parse(customerId);
   uuidSchema.parse(tagId);
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("customer_tag_assignments")
     .insert({ customer_id: customerId, tag_id: tagId, assigned_by: admin.id });
@@ -51,7 +51,7 @@ export async function removeTag(customerId: string, tagId: string): Promise<void
   uuidSchema.parse(customerId);
   uuidSchema.parse(tagId);
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("customer_tag_assignments")
     .delete()

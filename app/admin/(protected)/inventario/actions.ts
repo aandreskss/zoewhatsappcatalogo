@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 
 export async function updateInventoryAction(
@@ -21,7 +21,7 @@ export async function updateInventoryAction(
     .safeParse({ variantId, storeId, quantity });
   if (!parsed.success) return { error: "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: current } = await supabase
     .from("inventory")
@@ -58,7 +58,7 @@ export async function updateCostAction(
 ): Promise<{ error: string | null }> {
   await requireAdminUser(["super_admin", "admin", "inventory"]);
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("product_variants")
     .update({ cost_usd: costUsd })
@@ -83,7 +83,7 @@ export async function updateVariantPriceAction(
   await requireAdminUser(["super_admin", "admin", "inventory"]);
   if (priceUsd < 0) return { error: "El precio debe ser ≥ 0" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("product_variants")
     .update({ price_usd: priceUsd })
@@ -109,7 +109,7 @@ export async function deleteProductFromInventoryAction(
   const parsed = z.string().uuid().safeParse(productId);
   if (!parsed.success) return { error: "ID inválido" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("products")
     .update({ deleted_at: new Date().toISOString() })
@@ -129,7 +129,7 @@ export async function deleteVariantAction(
   const parsed = z.string().uuid().safeParse(variantId);
   if (!parsed.success) return { error: "ID inválido" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("product_variants")
     .update({ status: "inactive" })
@@ -156,7 +156,7 @@ export async function getMovementsAction(variantId: string): Promise<{
 }> {
   await requireAdminUser(["super_admin", "admin", "inventory"]);
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data, error } = await supabase
     .from("inventory_movements")
     .select("id, type, quantity_delta, previous_quantity, new_quantity, reason, created_at, stores(name)")

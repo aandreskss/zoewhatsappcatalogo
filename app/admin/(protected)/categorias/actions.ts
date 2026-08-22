@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 import { generateUniqueSlug } from "@/lib/domain/admin-catalog";
 
@@ -21,7 +21,7 @@ export async function createCategory(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const slug = await generateUniqueSlug(supabase, "categories", parsed.data);
 
   const { error } = await supabase.from("categories").insert({ name: parsed.data, slug });
@@ -33,7 +33,7 @@ export async function createCategory(
 
 export async function toggleCategoryActive(id: string, active: boolean): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("categories").update({ active }).eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/categorias");
@@ -42,7 +42,7 @@ export async function toggleCategoryActive(id: string, active: boolean): Promise
 
 export async function deleteCategory(id: string): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) throw new Error(error.message.includes("foreign key") ? "Esta categoría tiene productos asociados. Reasígnalos primero." : error.message);
   revalidatePath("/admin/categorias");

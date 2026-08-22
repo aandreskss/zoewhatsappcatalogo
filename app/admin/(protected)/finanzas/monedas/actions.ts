@@ -1,11 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import {
-  createSupabaseServerClient,
-  createSupabaseServiceRoleClient,
-} from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 import { refreshAutomaticExchangeRates } from "@/lib/domain/exchange-rate-provider";
 
@@ -38,7 +35,7 @@ export async function setManualExchangeRate(
   if (!parsed.success)
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const now = new Date().toISOString();
   const { error } = await supabase.from("exchange_rates").insert({
     currency_pair: parsed.data.pair,
@@ -60,7 +57,7 @@ const referenceSchema = z.enum(["USD", "EUR"]);
 export async function setVesReferenceCurrency(currency: string): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
   const parsed = referenceSchema.parse(currency);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("company_settings").upsert({
     key: "ves_reference_currency",
     value: parsed,

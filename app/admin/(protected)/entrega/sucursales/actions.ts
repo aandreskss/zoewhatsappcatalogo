@@ -1,8 +1,8 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { requireAdminUser } from "@/lib/auth/session";
 
 export interface FormState {
@@ -58,7 +58,7 @@ export async function createStore(
   const { name, code, google_maps_url, lat, lng, ...rest } = parsed.data;
   const slug = slugify(name);
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("stores").insert({
     name,
     code,
@@ -89,7 +89,7 @@ export async function updateStore(
   const { name, google_maps_url, lat, lng, ...rest } = parsed.data;
   const slug = slugify(name);
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase
     .from("stores")
     .update({ name, slug, google_maps_url: google_maps_url || null, lat: lat ?? null, lng: lng ?? null, ...rest })
@@ -103,7 +103,7 @@ export async function updateStore(
 
 export async function toggleStoreActive(id: string, active: boolean): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("stores").update({ active }).eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/entrega/sucursales");
@@ -112,7 +112,7 @@ export async function toggleStoreActive(id: string, active: boolean): Promise<vo
 
 export async function toggleStorePickup(id: string, pickup_enabled: boolean): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("stores").update({ pickup_enabled }).eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/entrega/sucursales");
@@ -121,7 +121,7 @@ export async function toggleStorePickup(id: string, pickup_enabled: boolean): Pr
 
 export async function toggleStoreDelivery(id: string, delivery_enabled: boolean): Promise<void> {
   await requireAdminUser(["super_admin", "admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("stores").update({ delivery_enabled }).eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/entrega/sucursales");
@@ -130,7 +130,7 @@ export async function toggleStoreDelivery(id: string, delivery_enabled: boolean)
 
 export async function deleteStore(id: string): Promise<void> {
   await requireAdminUser(["super_admin"]);
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { error } = await supabase.from("stores").delete().eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/entrega/sucursales");

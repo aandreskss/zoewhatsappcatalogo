@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getAdminSessionUser } from "@/lib/auth/session";
 import { getActiveTheme, DEFAULT_THEME_TOKENS } from "@/lib/domain/theme";
 import { BrandingForm } from "@/components/admin/branding-form";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function BrandingPage() {
   const user = await getAdminSessionUser();
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const theme = await getActiveTheme(supabase);
 
   if (!user?.roles.includes("super_admin")) {

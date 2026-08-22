@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { formatUsd, formatVes } from "@/lib/domain/pricing";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { AddOrderNoteForm } from "@/components/admin/add-order-note-form";
@@ -27,7 +27,7 @@ export default async function AdminOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const { data: order } = await supabase
     .from("orders")

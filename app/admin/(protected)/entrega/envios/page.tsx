@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { ShippingCarrierForm } from "@/components/admin/shipping-carrier-form";
 import { ToggleActive } from "@/components/admin/toggle-active";
 import { DeleteItemButton } from "@/components/admin/delete-item-button";
@@ -7,7 +7,7 @@ import { toggleShippingCarrierActive, deleteShippingCarrier } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function ShippingCarriersPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data: carriers } = await supabase
     .from("shipping_carriers")
     .select("id, name, notes, active")

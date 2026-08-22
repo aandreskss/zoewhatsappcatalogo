@@ -1,5 +1,5 @@
-import { getAdminSessionUser } from "@/lib/auth/session";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+﻿import { getAdminSessionUser } from "@/lib/auth/session";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import {
   getOrderKpis,
   getFunnelConversion,
@@ -111,7 +111,7 @@ function EmptyCard({ icon: Icon, text }: { icon: React.ElementType; text: string
 
 export default async function AdminDashboardPage() {
   const user = await getAdminSessionUser();
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const [today, week, funnel, mostViewed, mostAdded, outOfStock, topStore, topSources] =
     await Promise.all([
