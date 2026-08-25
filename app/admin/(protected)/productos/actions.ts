@@ -323,6 +323,18 @@ export async function deleteProduct(productId: string): Promise<void> {
   redirect("/admin/productos");
 }
 
+export async function bulkDeleteProducts(ids: string[]): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  if (!ids.length) return;
+  const supabase = createSupabaseServiceRoleClient();
+  const { error } = await supabase
+    .from("products")
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", ids);
+  if (error) throw error;
+  revalidatePath("/admin/productos");
+}
+
 export async function updateVariantFieldsAction(
   variantId: string,
   productId: string,
