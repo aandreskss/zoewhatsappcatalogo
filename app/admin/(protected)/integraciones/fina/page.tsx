@@ -64,6 +64,14 @@ export default async function FinaIntegrationPage() {
             Importa con un CSV simple de columnas <code className="rounded bg-[#F4EFEc] px-1">sku, cantidad</code>.
             Útil para ajustes manuales o archivos preparados a mano.
           </p>
+          <a
+            href="/samples/ejemplo-fina-a-zoe.csv"
+            download
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#EBE4E1] bg-[#F4EFEc] px-3 py-1.5 text-xs font-medium text-[#29252A]/60 transition-colors hover:border-[#C9748A]/40 hover:text-[#C9748A]"
+          >
+            <Download size={11} />
+            Descargar CSV de ejemplo
+          </a>
         </div>
         <FinaImportForm stores={stores ?? []} />
       </div>

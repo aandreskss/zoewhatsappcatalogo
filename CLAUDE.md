@@ -66,6 +66,7 @@ Los tipos son **manuales**, no auto-generados. Cuando se agrega un campo a la DB
 - `SUPABASE_SERVICE_ROLE_KEY` es secreto de servidor — nunca exponer al cliente.
 - CSP configurado en `next.config.ts`. Al integrar un nuevo servicio externo, agregar su dominio a `connect-src` e `img-src` según corresponda.
 - Migración `0025_fix_user_roles_read_own.sql`: agrega policy `user_read_own_roles` en `user_roles` — defensa en profundidad para que usuarios autenticados lean sus propias filas vía RLS.
+- Migración `0026_allow_duplicate_sku.sql`: elimina el constraint `UNIQUE` de `products.sku` y `product_variants.sku`. El SKU identifica un modelo/estilo, no un registro único — el mismo SKU puede repetirse en distintos colores o tallas.
 
 ### Server Actions
 - Siempre empezar con `await requireAdminUser([...roles])` antes de cualquier mutación.
@@ -160,22 +161,50 @@ Acepta **CSV, XLSX, XLSM, XLS** (usa `xlsx@0.18.5` / SheetJS). Parsea el formato
 ### 3 — Importar productos nuevos desde Fina
 Route: `POST /api/admin/import/productos` → `app/api/admin/import/productos/route.ts`  
 Componente: `components/admin/import-products-form.tsx`  
-Página: `/admin/productos/importar`
+Página: `/admin/productos/importar` (tab "Formato nativo Fina")
 
 Crea productos en borrador a partir del mismo formato CSV de Fina **sin tocar inventario**. Flujo de un solo paso (sin mapping manual):
 - Auto-detecta columnas `Tipo`, `Nombre`, `SKU`, `Categoria`, `Costo unitario`
 - Por cada grupo Item: verifica si el producto ya existe (por SKU o nombre, filtrando `deleted_at IS NULL`)
 - Si no existe: crea árbol completo `products` (status `draft`) → `product_options` (Talla) → `product_option_values` → `product_variants` (price_usd=0, cost_usd del CSV) → `variant_option_values`
 - SKU de variante: `{PARENTSKU}-{talla}` o `{NOMBRE_UPPER}-{talla}`
-- Retorna `{ total, created, exists, errors, results }` — `FinaNativoImportResponse` **no** incluye `created`; el tipo de esta ruta es `ImportProductsResponse`
+- Retorna `{ total, created, exists, errors, results }` — tipo `ImportProductsResponse`
 - Al terminar enlaza a `/admin/productos?estado=draft`
 
-**Flujo recomendado:** primero importar productos desde `/admin/productos/importar`, luego sincronizar inventario desde `/admin/integraciones/fina`.
+### 4 — Importar productos nuevos en formato personalizado (CSV plano completo)
+Route: `POST /api/admin/import/productos-custom` → `app/api/admin/import/productos-custom/route.ts`  
+Componente: `components/admin/import-products-custom-form.tsx`  
+Página: `/admin/productos/importar` (tab "Formato personalizado")
 
-### 2 — Importar inventario CSV plano (formato personalizado)
+**Todo en un solo CSV:** crea productos + variantes + fija inventario por tienda en un solo paso.
+
+**Formato:** una fila por talla. Filas con mismo `nombre+sku` se agrupan en un producto.
+
+| Columna | Obligatoria | Descripción |
+|---|---|---|
+| `nombre` | sí | Nombre del producto (alias: `name`, `producto`) |
+| `sku` | no | SKU padre del modelo (alias: `codigo`) |
+| `categoria` | no | Nombre de categoría existente en DB |
+| `talla` | sí | Valor de la variante (alias: `size`, `talle`) |
+| `precio_venta` | no | Precio USD (alias: `precio`, `price`) |
+| `precio_costo` | no | Costo USD (alias: `costo`, `cost`, `costounitario`) |
+| `{CODIGO_TIENDA}` | no | Stock para esa tienda — detectado por `store.code` exacto |
+
+- Detección de columnas de tienda: header normalizado debe coincidir exactamente con `store.code` (case-insensitive)
+- SKU de variante: `{PARENTSKU}-{talla}` o `{NOMBRE_UPPER}-{talla}`
+- Inventario: INSERT en `inventory` + movimiento `entrada` en `inventory_movements`
+- Retorna `{ total, created, exists, errors, variantsCreated, inventorySet, results }` — tipo `ImportCustomResponse`
+- Al terminar enlaza a `/admin/productos?estado=draft` y `/admin/inventario`
+- CSV de ejemplo: `public/samples/ejemplo-productos-personalizado.csv`
+
+**Selector de formato:** `components/admin/import-products-tabs.tsx` — client component con dos tabs que alterna entre `ImportProductsForm` y `ImportProductsCustomForm`. La página `importar/page.tsx` es server component que fetcha stores y los pasa al tabs component.
+
+**Flujo recomendado para carga desde cero:** usar el tab "Formato personalizado" — crea productos e inventario en un solo paso sin necesidad de importar desde Fina.
+
+### 2 — Importar inventario CSV plano (formato personalizado — solo stock)
 Route: `POST /api/admin/import/inventario`  
 Componente: `components/admin/fina-import-form.tsx`  
-CSV simple con columnas `sku, cantidad` (acepta aliases). Para ajustes manuales.
+CSV simple con columnas `sku, cantidad` (acepta aliases). Para ajustes manuales de stock de variantes ya existentes.
 
 ---
 
