@@ -36,6 +36,7 @@ const FIELD_ALIASES: Record<string, string> = {
   nombre: "nombre", name: "nombre", producto: "nombre",
   sku: "sku", codigo: "sku",
   categoria: "categoria", category: "categoria",
+  variante: "variante", color: "variante", variant: "variante", modelo: "variante",
   talla: "talla", size: "talla", talle: "talla",
   precioventa: "precioventa", precio: "precioventa", price: "precioventa",
   preciocosto: "preciocosto", costo: "preciocosto", cost: "preciocosto",
@@ -45,6 +46,7 @@ const FIELD_ALIASES: Record<string, string> = {
 // ── Internal types ────────────────────────────────────────────────────────────
 
 interface VRow {
+  variante: string;
   talla: string;
   precioVenta: number | null;
   precioCosto: number | null;
@@ -143,6 +145,10 @@ export async function POST(request: Request) {
       colIdx["categoria"] !== undefined
         ? (cols[colIdx["categoria"]] ?? "").trim()
         : "";
+    const variante =
+      colIdx["variante"] !== undefined
+        ? (cols[colIdx["variante"]] ?? "").trim()
+        : "";
     const talla =
       colIdx["talla"] !== undefined
         ? (cols[colIdx["talla"]] ?? "").trim()
@@ -168,6 +174,7 @@ export async function POST(request: Request) {
     }
 
     groups.get(key)!.variants.push({
+      variante,
       talla,
       precioVenta: isNaN(precioVentaRaw) ? null : precioVentaRaw,
       precioCosto: isNaN(precioCostoRaw) ? null : precioCostoRaw,
@@ -231,30 +238,92 @@ export async function POST(request: Request) {
         .single();
       if (prodErr || !prod) throw new Error(prodErr?.message ?? "Error creando producto");
 
-      // Create option "Talla"
-      const { data: opt, error: optErr } = await service
-        .from("product_options")
-        .insert({ product_id: prod.id, name: "Talla", order: 1 })
-        .select("id")
-        .single();
-      if (optErr || !opt) throw new Error(optErr?.message ?? "Error creando opción Talla");
+      // ── Determine if product uses variante dimension ──────────────────────
+      const hasVariante = variants.some((v) => v.variante !== "");
 
+      // Unique variante values in order of first appearance
+      const uniqueVariantes: string[] = [];
+      if (hasVariante) {
+        for (const v of variants) {
+          if (v.variante && !uniqueVariantes.includes(v.variante))
+            uniqueVariantes.push(v.variante);
+        }
+      }
+
+      // Unique talla values in order of first appearance
+      const uniqueTallas: string[] = [];
+      for (const v of variants) {
+        if (v.talla && !uniqueTallas.includes(v.talla))
+          uniqueTallas.push(v.talla);
+      }
+
+      // ── Create product_options ────────────────────────────────────────────
+      let varianteOptId: string | null = null;
+      let tallaOptId: string;
+
+      if (hasVariante) {
+        const { data: vo, error: voErr } = await service
+          .from("product_options")
+          .insert({ product_id: prod.id, name: "Variante", order: 1 })
+          .select("id")
+          .single();
+        if (voErr || !vo) throw new Error(voErr?.message ?? "Error creando opción Variante");
+        varianteOptId = vo.id;
+
+        const { data: to, error: toErr } = await service
+          .from("product_options")
+          .insert({ product_id: prod.id, name: "Talla", order: 2 })
+          .select("id")
+          .single();
+        if (toErr || !to) throw new Error(toErr?.message ?? "Error creando opción Talla");
+        tallaOptId = to.id;
+      } else {
+        const { data: opt, error: optErr } = await service
+          .from("product_options")
+          .insert({ product_id: prod.id, name: "Talla", order: 1 })
+          .select("id")
+          .single();
+        if (optErr || !opt) throw new Error(optErr?.message ?? "Error creando opción Talla");
+        tallaOptId = opt.id;
+      }
+
+      // ── Pre-create option values (deduplicados) ───────────────────────────
+      const varianteOvMap = new Map<string, string>(); // valor → option_value_id
+      for (let i = 0; i < uniqueVariantes.length; i++) {
+        const val = uniqueVariantes[i]!;
+        const { data: ov, error: ovErr } = await service
+          .from("product_option_values")
+          .insert({ option_id: varianteOptId!, value: val, order: i + 1 })
+          .select("id")
+          .single();
+        if (ovErr || !ov) throw new Error(ovErr?.message ?? `Error creando variante "${val}"`);
+        varianteOvMap.set(val, ov.id);
+      }
+
+      const tallaOvMap = new Map<string, string>(); // valor → option_value_id
+      for (let i = 0; i < uniqueTallas.length; i++) {
+        const val = uniqueTallas[i]!;
+        const { data: ov, error: ovErr } = await service
+          .from("product_option_values")
+          .insert({ option_id: tallaOptId, value: val, order: i + 1 })
+          .select("id")
+          .single();
+        if (ovErr || !ov) throw new Error(ovErr?.message ?? `Error creando talla "${val}"`);
+        tallaOvMap.set(val, ov.id);
+      }
+
+      // ── Create variants + inventory ───────────────────────────────────────
       let variantsCreated = 0;
       let inventorySet = 0;
 
-      for (let vi = 0; vi < variants.length; vi++) {
-        const v = variants[vi]!;
+      for (const v of variants) {
+        const skuParts = sku
+          ? (hasVariante && v.variante ? [sku, v.variante, v.talla] : [sku, v.talla])
+          : (hasVariante && v.variante
+              ? [nombre.toUpperCase(), v.variante, v.talla]
+              : [nombre.toUpperCase(), v.talla]);
+        const varSku = skuParts.join("-");
 
-        // Create option value
-        const { data: ov, error: ovErr } = await service
-          .from("product_option_values")
-          .insert({ option_id: opt.id, value: v.talla, order: vi + 1 })
-          .select("id")
-          .single();
-        if (ovErr || !ov) throw new Error(ovErr?.message ?? "Error creando talla");
-
-        // Create variant
-        const varSku = sku ? `${sku}-${v.talla}` : `${nombre.toUpperCase()}-${v.talla}`;
         const { data: vari, error: varErr } = await service
           .from("product_variants")
           .insert({
@@ -268,10 +337,15 @@ export async function POST(request: Request) {
           .single();
         if (varErr || !vari) throw new Error(varErr?.message ?? "Error creando variante");
 
-        await service.from("variant_option_values").insert({
-          variant_id: vari.id,
-          option_value_id: ov.id,
-        });
+        // Link to option values
+        const links: { variant_id: string; option_value_id: string }[] = [];
+        if (hasVariante && v.variante) {
+          const ovId = varianteOvMap.get(v.variante);
+          if (ovId) links.push({ variant_id: vari.id, option_value_id: ovId });
+        }
+        const tallaOvId = tallaOvMap.get(v.talla);
+        if (tallaOvId) links.push({ variant_id: vari.id, option_value_id: tallaOvId });
+        if (links.length) await service.from("variant_option_values").insert(links);
 
         variantsCreated++;
 

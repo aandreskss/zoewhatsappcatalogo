@@ -147,11 +147,12 @@ export async function POST(request: Request) {
       let existingIsDeleted = false;
 
       if (hasSku) {
-        const { data: ep } = await service
+        const { data: eps } = await service
           .from("products")
           .select("id, deleted_at")
           .ilike("sku", parentSku)
-          .maybeSingle();
+          .limit(1);
+        const ep = eps?.[0] ?? null;
         if (ep) { existingProductId = ep.id; existingIsDeleted = !!ep.deleted_at; }
       }
 

@@ -100,7 +100,7 @@ export function ImportProductsCustomForm({ stores }: Props) {
 
   function statusLabel(r: ImportCustomResult) {
     if (r.status === "created")
-      return `Creado · ${r.variantsCreated} talla(s) · ${r.inventorySet} registro(s) inventario`;
+      return `Creado · ${r.variantsCreated} combinación(es) · ${r.inventorySet} registro(s) inventario`;
     if (r.status === "exists") return "Ya existe";
     return "Error";
   }
@@ -113,17 +113,17 @@ export function ImportProductsCustomForm({ stores }: Props) {
       {/* ── Store codes hint ─────────────────────────────────────────────── */}
       <div className="rounded-xl border border-[#EBE4E1] bg-[#F4EFEc] px-4 py-3">
         <p className="text-xs font-semibold text-[#29252A]/70">
-          Formato del CSV — una fila por talla
+          Formato del CSV — una fila por combinación variante + talla
         </p>
         <code className="mt-1.5 block rounded-lg bg-white px-3 py-2 text-xs text-[#29252A]">
-          nombre,sku,categoria,talla,precio_venta,precio_costo
+          nombre,sku,categoria,variante,talla,precio_venta,precio_costo
           {stores.length > 0
             ? `,${stores.map((s) => s.code ?? s.name).join(",")}`
             : ",TIENDA1,TIENDA2"}
         </code>
         <p className="mt-2 text-xs text-[#29252A]/50">
-          Las últimas columnas son el stock por tienda. Los encabezados deben coincidir
-          con el código de la sucursal.
+          <span className="font-medium text-[#29252A]/70">variante</span> es opcional (ej. color/estilo). Si lo usas, el producto tendrá dos dimensiones: Variante + Talla.
+          Las últimas columnas son el stock por tienda — los encabezados deben coincidir con el código de la sucursal.
         </p>
 
         {stores.length > 0 && (

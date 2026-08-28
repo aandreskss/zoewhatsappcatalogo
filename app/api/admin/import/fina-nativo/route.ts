@@ -276,11 +276,12 @@ export async function POST(request: Request) {
 
       for (let ci = 0; ci < allCandidates.length; ci++) {
         const c = allCandidates[ci]!;
-        const { data } = await service
+        const { data: variantRows } = await service
           .from("product_variants")
           .select("id, product_id")
           .ilike("sku", c)
-          .maybeSingle();
+          .limit(1);
+        const data = variantRows?.[0] ?? null;
         if (!data) continue;
         // Skip variants whose parent product is soft-deleted
         const { data: liveProd } = await service
