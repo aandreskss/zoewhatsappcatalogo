@@ -5,6 +5,7 @@ import { getSiteContent, DEFAULT_SITE_CONTENT } from "@/lib/domain/site-content"
 import { HomeSectionRenderer } from "@/components/home/home-section-renderer";
 import { buildOrganizationJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 import Link from "next/link";
+import Image from "next/image";
 import type { SiteContent } from "@/lib/domain/site-content-types";
 
 export const revalidate = 60;
@@ -34,12 +35,18 @@ export default async function HomePage() {
       <script {...jsonLdScriptProps(organizationJsonLd)} />
 
       {/* HERO */}
-      <section className="relative h-[90vh] overflow-hidden bg-[var(--color-beige)]">
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(135deg, #F0D8E8 0%, #C98CA0 50%, #7B1847 100%)" }}
+      <section className="relative h-[90vh] overflow-hidden bg-[#29252A]">
+        {/* Background image */}
+        <Image
+          src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=85&auto=format&fit=crop"
+          alt="Zoe Shop"
+          fill
+          className="object-cover object-center"
+          priority
         />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(41,37,42,0.25) 100%)" }} />
+        {/* Overlays for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-black/5" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
         <div className="absolute bottom-10 left-6 right-6 md:bottom-16 md:left-16 md:right-auto md:max-w-lg">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70 mb-3">
