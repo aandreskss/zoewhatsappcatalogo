@@ -117,6 +117,26 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 - Sidebar: `bg-[#29252A]`, nav activo `bg-[#7B1847]/20 text-[#7B1847]`
 - `AdminShell` exporta un wrapper con `<Suspense>` para resolver React error #441 (`usePathname` suspendiendo)
 
+## Menú hamburguesa móvil
+
+`components/layout/mobile-menu.tsx` — drawer deslizable desde la izquierda.
+
+**Regla importante:** el panel del drawer usa **únicamente estilos inline** (no clases Tailwind) para evitar inconsistencias entre navegadores con `flex-1` y `height`. El panel padre necesita `height: "100vh"` explícito; de lo contrario `flex: 1` en el nav no tiene altura de referencia y los links no aparecen.
+
+```tsx
+// Estructura del panel:
+<div style={{ position:"absolute", top:0, left:0, width:"290px", height:"100vh",
+              zIndex:10, display:"flex", flexDirection:"column",
+              backgroundColor:"#ffffff", transform: open ? "translateX(0)" : "translateX(-100%)",
+              transition:"transform 280ms ease-out" }}>
+  {/* Cabecera: logo + X */}
+  {/* Nav: style={{ flex:1, overflowY:"auto", padding:"12px" }} */}
+  {/* Pie: dirección + Instagram */}
+</div>
+```
+
+El backdrop también usa `transition` como estilo inline (`opacity 280ms ease`). La apertura usa doble `requestAnimationFrame` para que el estado `open=true` dispare la transición CSS después del primer render visible.
+
 ## Integraciones externas importantes
 
 - **Cloudinary**: subida de imágenes. Dominios `api.cloudinary.com` (connect-src) y `res.cloudinary.com` (img-src) ya en la CSP de `next.config.ts`.
@@ -178,20 +198,26 @@ Página: `/admin/productos/importar` (tab "Formato personalizado")
 
 **Todo en un solo CSV:** crea productos + variantes + fija inventario por tienda en un solo paso.
 
-**Formato:** una fila por talla. Filas con mismo `nombre+sku` se agrupan en un producto.
+**Formato:** una fila por combinación variante+talla. Filas con mismo `nombre+sku` se agrupan en un producto.
 
 | Columna | Obligatoria | Descripción |
 |---|---|---|
 | `nombre` | sí | Nombre del producto (alias: `name`, `producto`) |
 | `sku` | no | SKU padre del modelo (alias: `codigo`) |
 | `categoria` | no | Nombre de categoría existente en DB |
-| `talla` | sí | Valor de la variante (alias: `size`, `talle`) |
+| `variante` | no | Color/estilo del modelo (alias: `color`, `variant`, `modelo`) |
+| `talla` | sí | Talla de la combinación (alias: `size`, `talle`) |
 | `precio_venta` | no | Precio USD (alias: `precio`, `price`) |
 | `precio_costo` | no | Costo USD (alias: `costo`, `cost`, `costounitario`) |
 | `{CODIGO_TIENDA}` | no | Stock para esa tienda — detectado por `store.code` exacto |
 
+**Lógica de dimensiones:**
+- Sin `variante`: crea 1 `product_option` llamada `Talla` (comportamiento original)
+- Con `variante`: crea 2 `product_options`: `Variante` (order 1) + `Talla` (order 2). Los valores de cada opción se deduplicán por orden de aparición en el CSV — "Negro" no se inserta dos veces aunque aparezca en varias filas.
+- SKU de variante: `{SKU}-{VARIANTE}-{TALLA}` cuando hay variante, `{SKU}-{TALLA}` cuando no
+- La agrupación en producto siempre es por `nombre+sku` — no por variante
+
 - Detección de columnas de tienda: header normalizado debe coincidir exactamente con `store.code` (case-insensitive)
-- SKU de variante: `{PARENTSKU}-{talla}` o `{NOMBRE_UPPER}-{talla}`
 - Inventario: INSERT en `inventory` + movimiento `entrada` en `inventory_movements`
 - Retorna `{ total, created, exists, errors, variantsCreated, inventorySet, results }` — tipo `ImportCustomResponse`
 - Al terminar enlaza a `/admin/productos?estado=draft` y `/admin/inventario`
@@ -233,9 +259,13 @@ Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_mo
 - **Tabla `banners`**: campos `image_desktop_url`, `image_mobile_url`, `headline`, `copy`, `cta_label`, `cta_url`, `position` (default `'home'`), `priority` (int), `active`, `starts_at`/`ends_at` opcionales para ventanas de tiempo.
 - **`getActiveBanners(supabase, position)`** en `lib/domain/home.ts` retorna **todos** los banners activos de la posición ordenados por prioridad, filtrados por ventana de fechas. Es la función principal para el carousel.
 - **`getActiveBanner`** (deprecada) retorna solo el primero; se mantiene para uso futuro fuera del Home.
-- **`BannerCarousel`** (`components/home/banner-carousel.tsx`): componente Client con autoavance cada 5 s, flechas y puntos. Muestra `image_mobile_url` en móvil (aspect 4:5) e `image_desktop_url` en desktop (aspect 21:9). Si hay un solo banner, se muestra estático sin controles.
+- **`BannerCarousel`** (`components/home/banner-carousel.tsx`): componente Client con autoavance cada 5 s, flechas y puntos. Layout en dos paneles: panel izquierdo (42% ancho) con gradiente vino `#7B1847 → #A0325E` contiene headline + copy + CTA; panel derecho (`flex-1`) contiene la imagen con `object-cover`. Este layout evita texto sobre la imagen (enfoque anterior fallaba cuando el sujeto quedaba centrado). En móvil los paneles se apilan (texto arriba, imagen abajo). Si hay un solo banner, se muestra estático sin controles. Fallback image: `images.unsplash.com/photo-1543163521-1bf539c55dd2`.
 - **`HomeSectionView.banners`** es `BannerView[]` (plural). El renderer llama a `<BannerCarousel banners={section.banners} />`.
 - Las secciones del Home se administran desde `/admin/marketing/home` (tabla `home_sections`). El bloque tipo `"banner"` toma `config.position` para saber qué pool de banners mostrar.
+
+### Admin de secciones del Home — edición inline de config
+
+`HomeSectionRow` (`components/admin/home-section-row.tsx`) incluye botón "Config" que expande un `<textarea>` con el JSON actual del campo `config`. Permite editar y guardar sin salir de la página. Action: `updateHomeSectionConfig(id, rawConfig)` en `marketing/home/actions.ts` — valida que sea objeto JSON válido antes de persistir. La página `marketing/home/page.tsx` incluye `config` en el `select()` y lo pasa a cada `HomeSectionRow`.
 
 ## Productos — borrado y gestión de imágenes
 
@@ -315,6 +345,21 @@ Todas las actions revalidan `/admin/entrega/sucursales`, `/admin/entrega/pickup`
 
 - **`DeleteItemButton`** (`components/admin/delete-item-button.tsx`): botón de borrado con confirmación inline de dos pasos. Primer clic muestra "¿Eliminar? Sí / No"; Sí llama `action(id)` via `useTransition`. Props: `{ id: string; action: (id: string) => Promise<void> }`. Usado en categorías, marcas, zonas de delivery y empresas de envío.
 - **`ToggleActive`**: toggle de activar/desactivar con optimistic update local — siempre actualizar `localActive` con `useState` y sincronizar después con la Server Action, para evitar que el toggle "salte" de vuelta mientras espera la respuesta.
+- **`CategoryImageButton`** (`components/admin/category-image-button.tsx`): thumbnail 40×40 por fila de categoría. Clic → abre file input → sube con `uploadImage()` (Cloudinary) → llama `updateCategoryImage(id, url)`. Botón X para quitar la imagen. La action `updateCategoryImage` está en `categorias/actions.ts` y revalida `/` y `/admin/categorias`.
+- **`PublishAllDraftsButton`** (`components/admin/publish-all-drafts-button.tsx`): flujo dos pasos — idle → confirmar (Sí/Cancelar) → toast con cantidad publicada y reset a 3 s. Solo se renderiza cuando `draftCount > 0`. Action: `publishAllDraftProductsAction()` en `productos/actions.ts` — actualiza `status='published'` en todos los drafts no borrados y revalida `/admin/productos`, `/catalogo`, `/`.
+
+## Home pública — reglas ISR y categorías
+
+### ISR + cookies() — antipatrón crítico
+`app/(public)/page.tsx` usa `export const revalidate = 60`. En ese contexto **nunca** llamar a `createSupabaseServerClient()` porque internamente llama a `cookies()`, que lanza excepción en el rebuild de fondo de ISR. La excepción queda silenciada en el try/catch de Next.js y la página renderiza vacía. Solución: usar siempre `createSupabaseServiceRoleClient()` en todas las pages públicas con ISR.
+
+### Categorías en el Home
+- Grid 2×5 (`grid-cols-2 sm:grid-cols-5`) en `components/home/home-section-renderer.tsx`.
+- Imágenes por categoría: columna `image_url` en la tabla `categories`. Si está vacía, el renderer usa `CATEGORY_FALLBACK_IMAGES[slug]` (mapa hardcodeado de Unsplash por slug: `damas`, `caballeros`, `deportivos`, `escolares`, `adulto-mayor`, `tallas-plus`).
+- **Límite de categorías**: en `lib/domain/home.ts`, cuando el bloque `categories` no tiene `categoryIds` específicos en su config, siempre se fetchan hasta 20 categorías activas, ignorando `config.limit`. Esto evita que categorías queden ocultas por un límite viejo guardado en DB.
+
+### Hero section
+`app/(public)/page.tsx` renderiza una sección Hero con imagen de fondo (Unsplash `photo-1483985988355-763728e1935b`) + dos gradientes superpuestos (lateral + vertical) para legibilidad del texto. No usar el bloque `"hero"` de `home_sections` para este header — es un componente fijo en la página.
 
 ## Notas sobre la DB de demo
 
