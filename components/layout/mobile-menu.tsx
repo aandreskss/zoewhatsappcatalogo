@@ -51,17 +51,22 @@ export function MobileMenu({
           {/* Backdrop */}
           <div
             onClick={closeMenu}
-            className="absolute inset-0 transition-opacity duration-280"
+            className="absolute inset-0"
             style={{
               backgroundColor: "rgba(41,37,42,0.5)",
               opacity: open ? 1 : 0,
+              transition: "opacity 280ms ease",
             }}
           />
 
-          {/* Slide panel */}
+          {/* Slide panel — z-10 garantiza que queda SOBRE el backdrop */}
           <div
-            className="absolute inset-y-0 left-0 flex w-[290px] flex-col bg-white shadow-2xl transition-transform duration-[280ms] ease-out"
-            style={{ transform: open ? "translateX(0)" : "translateX(-100%)" }}
+            className="absolute inset-y-0 left-0 z-10 flex w-[290px] flex-col overflow-hidden shadow-2xl"
+            style={{
+              backgroundColor: "#ffffff",
+              transform: open ? "translateX(0)" : "translateX(-100%)",
+              transition: "transform 280ms ease-out",
+            }}
           >
             {/* Panel header */}
             <div className="flex items-center justify-between border-b border-[#F0D8E8] px-5 py-4">
