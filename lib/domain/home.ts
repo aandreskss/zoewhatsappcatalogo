@@ -173,7 +173,7 @@ async function resolveSection(
         .select("id, name, slug, image_url")
         .eq("active", true)
         .order("order")
-        .limit(typeof config.limit === "number" ? config.limit : 8);
+        .limit(typeof config.limit === "number" ? config.limit : 10);
       if (ids && ids.length > 0) query = query.in("id", ids);
       const { data } = await query;
       return {

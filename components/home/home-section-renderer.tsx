@@ -80,7 +80,7 @@ export function HomeSectionRenderer({
       return (
         <section className="flex flex-col gap-3">
           <SectionHeading title={section.title} subtitle={section.subtitle} />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {section.categories.map((category) => (
               <Link
                 key={category.id}
