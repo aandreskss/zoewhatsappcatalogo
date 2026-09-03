@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getHomeSections } from "@/lib/domain/home";
 import { getVesReferenceRate } from "@/lib/domain/currency";
 import { getSiteContent, DEFAULT_SITE_CONTENT } from "@/lib/domain/site-content";
@@ -17,7 +17,7 @@ export default async function HomePage() {
   let vesRate: Awaited<ReturnType<typeof getVesReferenceRate>> = null;
   let content: SiteContent = DEFAULT_SITE_CONTENT;
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseServiceRoleClient();
     [sections, vesRate, content] = await Promise.all([
       getHomeSections(supabase),
       getVesReferenceRate(supabase),
