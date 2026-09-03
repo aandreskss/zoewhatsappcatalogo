@@ -117,6 +117,23 @@ export async function deleteHomeSection(id: string): Promise<void> {
  * vecino — suficiente para reordenar sin arrastrar-y-soltar (fuera de
  * alcance de esta fase, ver comentario en `lib/domain/home.ts`).
  */
+export async function updateHomeSectionConfig(
+  id: string,
+  rawConfig: string,
+): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const parsed = jsonConfigSchema.safeParse(rawConfig);
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "JSON inválido");
+  const supabase = createSupabaseServiceRoleClient();
+  const { error } = await supabase
+    .from("home_sections")
+    .update({ config: parsed.data as Json })
+    .eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/marketing/home");
+  revalidatePath("/");
+}
+
 export async function moveHomeSection(
   id: string,
   direction: "up" | "down",

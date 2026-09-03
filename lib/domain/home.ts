@@ -168,13 +168,19 @@ async function resolveSection(
     }
     case "categories": {
       const ids = config.categoryIds as string[] | undefined;
+      const hasSpecificIds = ids && ids.length > 0;
+      // Sin categoryIds explícitos → mostrar todas las activas (hasta 20).
+      // Con categoryIds → respetar config.limit para no mostrar de más.
+      const limit = hasSpecificIds
+        ? (typeof config.limit === "number" ? config.limit : 20)
+        : 20;
       let query = supabase
         .from("categories")
         .select("id, name, slug, image_url")
         .eq("active", true)
         .order("order")
-        .limit(typeof config.limit === "number" ? config.limit : 10);
-      if (ids && ids.length > 0) query = query.in("id", ids);
+        .limit(limit);
+      if (hasSpecificIds) query = query.in("id", ids!);
       const { data } = await query;
       return {
         ...base,

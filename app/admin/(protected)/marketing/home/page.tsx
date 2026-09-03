@@ -14,7 +14,7 @@ export default async function HomeSectionsPage() {
   const supabase = createSupabaseServiceRoleClient();
   const { data: sections } = await supabase
     .from("home_sections")
-    .select("id, type, title, active")
+    .select("id, type, title, active, config")
     .order("order");
 
   return (
@@ -30,6 +30,7 @@ export default async function HomeSectionsPage() {
             type={section.type}
             title={section.title}
             active={section.active}
+            config={section.config}
           />
         ))}
         {(sections ?? []).length === 0 ? (
