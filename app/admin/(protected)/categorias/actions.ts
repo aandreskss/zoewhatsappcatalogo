@@ -47,3 +47,15 @@ export async function deleteCategory(id: string): Promise<void> {
   if (error) throw new Error(error.message.includes("foreign key") ? "Esta categoría tiene productos asociados. Reasígnalos primero." : error.message);
   revalidatePath("/admin/categorias");
 }
+
+export async function updateCategoryImage(id: string, imageUrl: string | null): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = createSupabaseServiceRoleClient();
+  const { error } = await supabase
+    .from("categories")
+    .update({ image_url: imageUrl })
+    .eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/categorias");
+  revalidatePath("/");
+}

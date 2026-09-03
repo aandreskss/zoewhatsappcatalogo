@@ -95,6 +95,22 @@ export async function updateProductStatus(
   await revalidateProductPublicPaths(supabase, productId);
 }
 
+export async function publishAllDraftProductsAction(): Promise<number> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase
+    .from("products")
+    .update({ status: "published" })
+    .eq("status", "draft")
+    .is("deleted_at", null)
+    .select("id");
+  if (error) throw error;
+  revalidatePath("/admin/productos");
+  revalidatePath("/catalogo");
+  revalidatePath("/");
+  return (data ?? []).length;
+}
+
 export async function updateProductInfoAction(
   productId: string,
   _prev: FormState,

@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, Upload } from "lucide-react";
 import { ProductsTable } from "@/components/admin/products-table";
+import { PublishAllDraftsButton } from "@/components/admin/publish-all-drafts-button";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,15 @@ export default async function AdminProductsPage({
   const { q, estado } = await searchParams;
   const supabase = createSupabaseServiceRoleClient();
 
-  const [{ count: totalCount }, { data: products, error }] = await Promise.all([
+  const [{ count: totalCount }, { count: draftCount }, { data: products, error }] = await Promise.all([
     supabase
       .from("products")
       .select("*", { count: "exact", head: true })
+      .is("deleted_at", null),
+    supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "draft")
       .is("deleted_at", null),
     (() => {
       let query = supabase
@@ -78,6 +84,7 @@ export default async function AdminProductsPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <PublishAllDraftsButton draftCount={draftCount ?? 0} />
           <Button asChild variant="outline">
             <Link href="/admin/productos/importar" className="flex items-center gap-1.5">
               <Upload size={15} />

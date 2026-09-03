@@ -2,6 +2,7 @@
 import { SimpleCreateForm } from "@/components/admin/simple-create-form";
 import { ToggleActive } from "@/components/admin/toggle-active";
 import { DeleteItemButton } from "@/components/admin/delete-item-button";
+import { CategoryImageButton } from "@/components/admin/category-image-button";
 import { createCategory, toggleCategoryActive, deleteCategory } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export default async function CategoriasPage() {
   const supabase = createSupabaseServiceRoleClient();
   const { data: categories } = await supabase
     .from("categories")
-    .select("id, name, slug, active")
+    .select("id, name, slug, active, image_url")
     .order("order");
 
   return (
@@ -24,7 +25,11 @@ export default async function CategoriasPage() {
 
       <ul className="flex flex-col divide-y divide-[var(--color-border)] rounded-[var(--radius-lg)] border border-[var(--color-border)]">
         {(categories ?? []).map((category) => (
-          <li key={category.id} className="flex items-center justify-between gap-3 p-3 text-sm">
+          <li key={category.id} className="flex items-center gap-3 p-3 text-sm">
+            <CategoryImageButton
+              categoryId={category.id}
+              currentImageUrl={category.image_url}
+            />
             <div className="min-w-0 flex-1">
               <p className="font-medium">{category.name}</p>
               <p className="text-[var(--color-muted-foreground)]">
