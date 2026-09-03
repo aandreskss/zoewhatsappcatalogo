@@ -62,11 +62,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="absolute top-20 right-6 md:top-28 md:right-16">
-          <div className="w-20 h-20 rounded-full bg-[var(--color-rose-light)] flex flex-col items-center justify-center text-center">
-            <p className="font-display text-[11px] leading-tight text-[var(--color-foreground)]">SS<br />2025</p>
-          </div>
-        </div>
+
       </section>
 
       {/* CMS SECTIONS */}

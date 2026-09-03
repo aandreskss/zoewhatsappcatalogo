@@ -5,6 +5,21 @@ import { ProductCard } from "@/components/catalog/product-card";
 import { Button } from "@/components/ui/button";
 import { BannerCarousel } from "@/components/home/banner-carousel";
 
+const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  damas:
+    "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=800&q=80&auto=format&fit=crop",
+  caballeros:
+    "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=800&q=80&auto=format&fit=crop",
+  deportivos:
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80&auto=format&fit=crop",
+  escolares:
+    "https://images.unsplash.com/photo-1516478177764-9fe5bd7e9717?w=800&q=80&auto=format&fit=crop",
+  "adulto-mayor":
+    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&q=80&auto=format&fit=crop",
+  "tallas-plus":
+    "https://images.unsplash.com/photo-1512374382149-233c42b6a83b?w=800&q=80&auto=format&fit=crop",
+};
+
 /**
  * Renderiza un bloque ya resuelto (ver `lib/domain/home.ts`). Cada `case`
  * corresponde 1:1 a un `type` de `home_sections` — un tipo sin datos
@@ -70,19 +85,21 @@ export function HomeSectionRenderer({
               <Link
                 key={category.id}
                 href={`/categoria/${category.slug}`}
-                className="group flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 text-center hover:shadow-md"
+                className="group flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] overflow-hidden text-center hover:shadow-md transition-shadow"
               >
-                <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-md)] bg-[var(--color-muted)]">
-                  {category.imageUrl ? (
+                <div className="relative aspect-square w-full overflow-hidden bg-[var(--color-muted)]">
+                  {(category.imageUrl ?? CATEGORY_FALLBACK_IMAGES[category.slug]) ? (
                     <Image
-                      src={category.imageUrl}
+                      src={category.imageUrl ?? CATEGORY_FALLBACK_IMAGES[category.slug]!}
                       alt={category.name}
                       fill
-                      className="object-cover"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                  ) : null}
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#F0D8E8] to-[#F0B8D0]" />
+                  )}
                 </div>
-                <p className="text-sm font-medium">{category.name}</p>
+                <p className="text-sm font-medium py-2 px-2">{category.name}</p>
               </Link>
             ))}
           </div>
