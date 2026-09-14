@@ -48,11 +48,19 @@ export function ContentForm({ current }: { current: SiteContent }) {
           defaultValue={current.heroSubtitle}
           disabled={isPending}
         />
-        <div className="flex flex-col gap-1">
-          <Label>Imagen de fondo</Label>
+        <div className="flex flex-col gap-2">
+          <Label>Imagen de fondo del hero</Label>
+          {current.heroImageUrl && (
+            <div className="relative w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={current.heroImageUrl} alt="Imagen actual del hero" className="max-h-40 w-full object-cover" />
+              <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-xs text-white">
+                Imagen actual
+              </span>
+            </div>
+          )}
           <ImageUpload
-            label=""
-            previewUrl={current.heroImageUrl || undefined}
+            label={current.heroImageUrl ? "Subir nueva imagen (reemplaza la actual)" : "Subir imagen"}
             onUpload={(url) => { if (heroImageUrlRef.current) heroImageUrlRef.current.value = url; }}
             disabled={isPending}
             aspectHint="16:9 recomendado · mín. 1600px de ancho"
