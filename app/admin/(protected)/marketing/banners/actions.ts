@@ -64,3 +64,19 @@ export async function toggleBannerActive(id: string, active: boolean): Promise<v
   revalidatePath("/admin/marketing/banners");
   revalidatePath("/");
 }
+
+export async function updateBannerImages(
+  id: string,
+  desktopUrl: string | null,
+  mobileUrl: string | null,
+): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = createSupabaseServiceRoleClient();
+  const { error } = await supabase
+    .from("banners")
+    .update({ image_desktop_url: desktopUrl, image_mobile_url: mobileUrl })
+    .eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/marketing/banners");
+  revalidatePath("/");
+}

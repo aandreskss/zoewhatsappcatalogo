@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import {
   saveSiteContent,
   type ContentFormState,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
+import { ImageUpload } from "@/components/admin/image-upload";
 import type { SiteContent } from "@/lib/domain/site-content-types";
 
 const initialState: ContentFormState = { error: null };
@@ -18,6 +19,7 @@ export function ContentForm({ current }: { current: SiteContent }) {
   const [state, formAction, isPending] = useActionState(saveSiteContent, initialState);
   const toast = useToast();
   const wasPending = React.useRef(false);
+  const heroImageUrlRef = useRef<HTMLInputElement>(null);
 
   // Nav link row count — start with however many are in current content (min 1)
   const [rowCount, setRowCount] = React.useState<number>(
@@ -46,6 +48,17 @@ export function ContentForm({ current }: { current: SiteContent }) {
           defaultValue={current.heroSubtitle}
           disabled={isPending}
         />
+        <div className="flex flex-col gap-1">
+          <Label>Imagen de fondo</Label>
+          <ImageUpload
+            label=""
+            previewUrl={current.heroImageUrl || undefined}
+            onUpload={(url) => { if (heroImageUrlRef.current) heroImageUrlRef.current.value = url; }}
+            disabled={isPending}
+            aspectHint="16:9 recomendado · mín. 1600px de ancho"
+          />
+          <input ref={heroImageUrlRef} name="heroImageUrl" type="hidden" defaultValue={current.heroImageUrl} />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Texto del botón CTA" name="heroCtaText" defaultValue={current.heroCtaText} disabled={isPending} />
           <Field label="Enlace del botón CTA" name="heroCtaHref" defaultValue={current.heroCtaHref} disabled={isPending} />

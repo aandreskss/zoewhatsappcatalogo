@@ -38,7 +38,7 @@ export default async function HomePage() {
       <section className="relative h-[90vh] overflow-hidden bg-[#29252A]">
         {/* Background image */}
         <Image
-          src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=85&auto=format&fit=crop"
+          src={content.heroImageUrl || "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=85&auto=format&fit=crop"}
           alt="Zoe Shop"
           fill
           className="object-cover object-center"

@@ -34,6 +34,7 @@ function parseSiteContent(raw: unknown): SiteContent {
     heroLabel: str(o.heroLabel, d.heroLabel),
     heroTitle: str(o.heroTitle, d.heroTitle),
     heroSubtitle: str(o.heroSubtitle, d.heroSubtitle),
+    heroImageUrl: str(o.heroImageUrl, d.heroImageUrl),
     heroCtaText: str(o.heroCtaText, d.heroCtaText),
     heroCtaHref: str(o.heroCtaHref, d.heroCtaHref),
     catalogLabel: str(o.catalogLabel, d.catalogLabel),

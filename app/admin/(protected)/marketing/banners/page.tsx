@@ -1,5 +1,6 @@
 ﻿import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { BannerForm } from "@/components/admin/banner-form";
+import { BannerImageEditor } from "@/components/admin/banner-image-editor";
 import { ToggleActive } from "@/components/admin/toggle-active";
 import { toggleBannerActive } from "./actions";
 
@@ -9,7 +10,7 @@ export default async function BannersPage() {
   const supabase = createSupabaseServiceRoleClient();
   const { data: banners } = await supabase
     .from("banners")
-    .select("id, name, position, headline, priority, active")
+    .select("id, name, position, headline, priority, active, image_desktop_url, image_mobile_url")
     .order("priority", { ascending: false });
 
   return (
@@ -19,21 +20,25 @@ export default async function BannersPage() {
 
       <ul className="flex flex-col divide-y divide-[var(--color-border)] rounded-[var(--radius-lg)] border border-[var(--color-border)]">
         {(banners ?? []).map((banner) => (
-          <li
-            key={banner.id}
-            className="flex items-center justify-between gap-4 p-3 text-sm"
-          >
-            <div>
-              <p className="font-medium">{banner.name}</p>
-              <p className="text-[var(--color-muted-foreground)]">
-                {banner.position} · prioridad {banner.priority}
-                {banner.headline ? ` · "${banner.headline}"` : ""}
-              </p>
+          <li key={banner.id} className="flex flex-col gap-1 p-3 text-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-medium">{banner.name}</p>
+                <p className="text-[var(--color-muted-foreground)]">
+                  {banner.position} · prioridad {banner.priority}
+                  {banner.headline ? ` · "${banner.headline}"` : ""}
+                </p>
+              </div>
+              <ToggleActive
+                id={banner.id}
+                active={banner.active}
+                action={toggleBannerActive}
+              />
             </div>
-            <ToggleActive
+            <BannerImageEditor
               id={banner.id}
-              active={banner.active}
-              action={toggleBannerActive}
+              desktopUrl={banner.image_desktop_url ?? null}
+              mobileUrl={banner.image_mobile_url ?? null}
             />
           </li>
         ))}

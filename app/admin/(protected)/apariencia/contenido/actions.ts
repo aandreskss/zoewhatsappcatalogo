@@ -43,6 +43,7 @@ export async function saveSiteContent(
     heroLabel: String(formData.get("heroLabel") ?? "").trim(),
     heroTitle: String(formData.get("heroTitle") ?? "").trim(),
     heroSubtitle: String(formData.get("heroSubtitle") ?? "").trim(),
+    heroImageUrl: String(formData.get("heroImageUrl") ?? "").trim(),
     heroCtaText: String(formData.get("heroCtaText") ?? "").trim(),
     heroCtaHref: String(formData.get("heroCtaHref") ?? "").trim(),
     catalogLabel: String(formData.get("catalogLabel") ?? "").trim(),
