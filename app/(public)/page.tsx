@@ -129,11 +129,20 @@ export default async function HomePage() {
               </svg>
             </Link>
           </div>
-          <div className="w-full md:w-80 h-64 md:h-80 bg-[var(--color-rose-light)] order-1 md:order-2 flex items-center justify-center">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
-              <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-              <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0" />
-            </svg>
+          <div className="relative w-full md:w-80 h-64 md:h-80 bg-[var(--color-rose-light)] order-1 md:order-2 flex items-center justify-center overflow-hidden">
+            {content.promoImageUrl ? (
+              <Image
+                src={content.promoImageUrl}
+                alt={content.promoTitle}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+                <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0" />
+              </svg>
+            )}
           </div>
         </div>
       </section>

@@ -7,12 +7,16 @@ import {
   deleteHomeSection,
   moveHomeSection,
   updateHomeSectionConfig,
+  updateHomeSectionImageUrl,
 } from "@/app/admin/(protected)/marketing/home/actions";
 import { ToggleActive } from "@/components/admin/toggle-active";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import { ImageUpload } from "@/components/admin/image-upload";
 import type { Json } from "@/lib/db/supabase/types";
+
+const TYPES_WITH_IMAGE = new Set(["hero", "image_text", "cta"]);
 
 export function HomeSectionRow({
   id,
@@ -35,6 +39,26 @@ export function HomeSectionRow({
   );
   const router = useRouter();
   const toast = useToast();
+
+  const hasImageConfig = TYPES_WITH_IMAGE.has(type);
+  const currentImageUrl = React.useMemo(() => {
+    if (!hasImageConfig) return null;
+    if (typeof config !== "object" || config === null || Array.isArray(config)) return null;
+    const c = config as Record<string, unknown>;
+    return typeof c.imageUrl === "string" ? c.imageUrl : null;
+  }, [config, hasImageConfig]);
+  const [imageOpen, setImageOpen] = React.useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = React.useState<string | null>(currentImageUrl);
+  const [imageSaved, setImageSaved] = React.useState(false);
+
+  function handleImageUpload(url: string) {
+    setPreviewImageUrl(url || null);
+    setImageSaved(false);
+    startTransition(async () => {
+      await updateHomeSectionImageUrl(id, url);
+      setImageSaved(true);
+    });
+  }
 
   function move(direction: "up" | "down") {
     startTransition(async () => {
@@ -122,6 +146,43 @@ export function HomeSectionRow({
             </Button>
           </div>
         </div>
+      )}
+
+      {hasImageConfig && (
+        imageOpen ? (
+          <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-muted)] p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#29252A]/40">Imagen</p>
+              <div className="flex items-center gap-3">
+                {imageSaved && !isPending && (
+                  <span className="text-xs text-emerald-600 font-medium">✓ Guardado</span>
+                )}
+                {isPending && <span className="text-xs text-[#29252A]/50">Guardando…</span>}
+                <button
+                  type="button"
+                  onClick={() => setImageOpen(false)}
+                  className="text-xs text-[#29252A]/50 hover:text-[#29252A] transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+            <ImageUpload
+              previewUrl={previewImageUrl ?? undefined}
+              onUpload={handleImageUpload}
+              disabled={isPending}
+              aspectHint="16:9 recomendado"
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { setImageOpen(true); setImageSaved(false); }}
+            className="self-start text-xs font-medium text-[#7B1847] hover:opacity-70 transition-opacity"
+          >
+            {previewImageUrl ? "Cambiar imagen" : "Subir imagen"}
+          </button>
+        )
       )}
 
       <ConfirmDialog

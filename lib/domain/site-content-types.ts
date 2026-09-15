@@ -14,6 +14,7 @@ export interface SiteContent {
   promoLabel: string;
   promoTitle: string;
   promoSubtitle: string;
+  promoImageUrl: string;
   promoCtaText: string;
   promoCtaHref: string;
   whatsapp: string;
@@ -34,6 +35,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   promoTitle: "Tacones, stilettos y confort.",
   promoSubtitle:
     "Tacones importados, quinceañeras, deportivo y sandalias ortopédicas. Todo en un solo lugar.",
+  promoImageUrl: "",
   promoCtaText: "Descubrir",
   promoCtaHref: "/catalogo",
   whatsapp: "584244738930",

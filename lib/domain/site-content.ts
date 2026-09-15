@@ -41,6 +41,7 @@ function parseSiteContent(raw: unknown): SiteContent {
     promoLabel: str(o.promoLabel, d.promoLabel),
     promoTitle: str(o.promoTitle, d.promoTitle),
     promoSubtitle: str(o.promoSubtitle, d.promoSubtitle),
+    promoImageUrl: str(o.promoImageUrl, d.promoImageUrl),
     promoCtaText: str(o.promoCtaText, d.promoCtaText),
     promoCtaHref: str(o.promoCtaHref, d.promoCtaHref),
     whatsapp: str(o.whatsapp, d.whatsapp),

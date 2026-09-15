@@ -134,6 +134,41 @@ export async function updateHomeSectionConfig(
   revalidatePath("/");
 }
 
+export async function updateHomeSectionImageUrl(
+  id: string,
+  imageUrl: string,
+): Promise<void> {
+  await requireAdminUser(["super_admin", "admin"]);
+  const supabase = createSupabaseServiceRoleClient();
+
+  const { data, error: readError } = await supabase
+    .from("home_sections")
+    .select("config")
+    .eq("id", id)
+    .single();
+  if (readError) throw readError;
+
+  const currentConfig =
+    typeof data.config === "object" && data.config !== null && !Array.isArray(data.config)
+      ? { ...(data.config as Record<string, unknown>) }
+      : {};
+
+  if (imageUrl) {
+    currentConfig.imageUrl = imageUrl;
+  } else {
+    delete currentConfig.imageUrl;
+  }
+
+  const { error } = await supabase
+    .from("home_sections")
+    .update({ config: currentConfig as Json })
+    .eq("id", id);
+  if (error) throw error;
+
+  revalidatePath("/admin/marketing/home");
+  revalidatePath("/");
+}
+
 export async function moveHomeSection(
   id: string,
   direction: "up" | "down",

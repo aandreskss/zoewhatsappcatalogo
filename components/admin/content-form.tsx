@@ -20,6 +20,7 @@ export function ContentForm({ current }: { current: SiteContent }) {
   const toast = useToast();
   const wasPending = React.useRef(false);
   const heroImageUrlRef = useRef<HTMLInputElement>(null);
+  const promoImageUrlRef = useRef<HTMLInputElement>(null);
 
   // Nav link row count — start with however many are in current content (min 1)
   const [rowCount, setRowCount] = React.useState<number>(
@@ -99,6 +100,25 @@ export function ContentForm({ current }: { current: SiteContent }) {
           defaultValue={current.promoSubtitle}
           disabled={isPending}
         />
+        <div className="flex flex-col gap-2">
+          <Label>Imagen del banner promocional</Label>
+          {current.promoImageUrl && (
+            <div className="relative w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={current.promoImageUrl} alt="Imagen actual del banner promo" className="max-h-40 w-full object-cover" />
+              <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-xs text-white">
+                Imagen actual
+              </span>
+            </div>
+          )}
+          <ImageUpload
+            label={current.promoImageUrl ? "Subir nueva imagen (reemplaza la actual)" : "Subir imagen"}
+            onUpload={(url) => { if (promoImageUrlRef.current) promoImageUrlRef.current.value = url; }}
+            disabled={isPending}
+            aspectHint="4:3 recomendado · mín. 800px de ancho"
+          />
+          <input ref={promoImageUrlRef} name="promoImageUrl" type="hidden" defaultValue={current.promoImageUrl} />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Texto del botón CTA" name="promoCtaText" defaultValue={current.promoCtaText} disabled={isPending} />
           <Field label="Enlace del botón CTA" name="promoCtaHref" defaultValue={current.promoCtaHref} disabled={isPending} />

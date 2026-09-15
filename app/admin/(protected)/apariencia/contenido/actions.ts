@@ -50,6 +50,7 @@ export async function saveSiteContent(
     promoLabel: String(formData.get("promoLabel") ?? "").trim(),
     promoTitle: String(formData.get("promoTitle") ?? "").trim(),
     promoSubtitle: String(formData.get("promoSubtitle") ?? "").trim(),
+    promoImageUrl: String(formData.get("promoImageUrl") ?? "").trim(),
     promoCtaText: String(formData.get("promoCtaText") ?? "").trim(),
     promoCtaHref: String(formData.get("promoCtaHref") ?? "").trim(),
     whatsapp: String(formData.get("whatsapp") ?? "")
