@@ -33,8 +33,11 @@ export function CheckoutForm({
   const { items, subtotalUsd, refresh } = useCart();
 
   const [deliveryMethod, setDeliveryMethod] = React.useState<DeliveryMethod>("pickup");
+  const [selectedMethodId, setSelectedMethodId] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  const selectedMethod = paymentMethods.find((m) => m.id === selectedMethodId) ?? null;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -251,6 +254,8 @@ export function CheckoutForm({
             name="paymentMethodId"
             required
             disabled={isSubmitting}
+            value={selectedMethodId}
+            onChange={(e) => setSelectedMethodId(e.target.value)}
             className="h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
           >
             <option value="">Selecciona un método</option>
@@ -261,6 +266,18 @@ export function CheckoutForm({
             ))}
           </select>
         </div>
+
+        {selectedMethod?.instructions && (
+          <div className="rounded-[var(--radius-md)] border border-[#F0B8D0] bg-[#FDF0F6] px-4 py-3">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#7B1847]">
+              Instrucciones de pago
+            </p>
+            <p className="whitespace-pre-line text-sm text-[#29252A]">
+              {selectedMethod.instructions}
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-col gap-1">
           <Label htmlFor="paymentNotes">Notas para el pago (opcional)</Label>
           <Input id="paymentNotes" name="paymentNotes" disabled={isSubmitting} />

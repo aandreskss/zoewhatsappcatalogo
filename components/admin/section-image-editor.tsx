@@ -87,17 +87,39 @@ export function SectionImageEditor({ id, imageUrl: initialImageUrl }: Props) {
 
       {/* Preview o zona de subida */}
       {preview ? (
-        <div className="relative overflow-hidden rounded-lg border border-[#EBE0E7]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={preview} alt="" className="max-h-48 w-full object-contain" />
-          <button
-            type="button"
-            onClick={handleRemove}
-            disabled={busy}
-            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 disabled:opacity-50"
-          >
-            <X size={14} />
-          </button>
+        <div className="flex flex-col gap-2">
+          <div className="relative overflow-hidden rounded-lg border border-[#EBE0E7]" style={{ minHeight: 64 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview}
+              alt=""
+              className="max-h-48 w-full object-contain"
+              onError={() => setPreview(null)}
+            />
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={busy}
+              className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 disabled:opacity-50"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <label className="flex cursor-pointer items-center gap-1 self-start text-xs font-medium text-[#7B1847] hover:opacity-70 transition-opacity">
+            <Upload size={12} />
+            Reemplazar imagen
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              disabled={busy}
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void handleFile(file);
+              }}
+            />
+          </label>
         </div>
       ) : (
         /* Zona de clic: el input file invisible cubre toda el área */
