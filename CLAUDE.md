@@ -52,13 +52,18 @@ Los tipos son **manuales**, no auto-generados. Cuando se agrega un campo a la DB
 - `lib/domain/integrations.ts` — `IntegrationProvider` type, lista paralela que debe coincidir
 
 ### Clientes de Supabase
-- `createSupabaseServerClient()` → usa `cookies()` → fuerza renderizado dinámico. **Nunca** llamar desde el root layout ni desde páginas con ISR. En el admin, solo se usa en los archivos de MFA (`mfa/*`), seguridad (`seguridad/page.tsx`, `seguridad/actions.ts`) y el layout protegido — todos necesitan `supabase.auth.*` con la sesión real del usuario.
-- `createSupabaseServiceRoleClient()` → **no** llama a `cookies()`, omite RLS por completo. Es la opción correcta para **todas** las pages y actions del admin `(protected)/**` (la autorización ya la hace `requireAdminUser()` en código).
+- `createSupabaseServerClient()` → usa `cookies()` → fuerza renderizado dinámico. **Nunca** llamar desde el root layout público ni desde páginas con ISR — durante el rebuild en background Next.js silencia la excepción y la página renderiza vacía.
+- `createSupabaseServiceRoleClient()` → **no** llama a `cookies()`, omite RLS por completo. Es la opción correcta para **todas** las pages y actions del admin `(protected)/**` Y para **todas las páginas públicas** con ISR.
 
-**Patrón del admin (desde migración de perf 2026-08-22):**
+**Patrón del catálogo público (desde 2026-09-16):**
+- `app/(public)/layout.tsx` y todas las páginas bajo `app/(public)/` usan `createSupabaseServiceRoleClient()`. Esto incluye `catalogo/page.tsx`, `producto/[slug]/page.tsx`, `categoria/[slug]/page.tsx`, `coleccion/[slug]/page.tsx` y `marca/[slug]/page.tsx`.
+- Las funciones helper internas (`getCategory`, `getBrand`, `getCollection`) también usan service role — **no** crear un server client dentro de helpers llamados desde páginas ISR.
+- `createSupabaseServiceRoleClient()` es síncrono — **no** usar `await`.
+
+**Patrón del admin (desde 2026-08-22):**
 - Todas las `page.tsx` y `actions.ts` bajo `(protected)/` usan `createSupabaseServiceRoleClient()`.
-- `getAdminSessionUser()` (`lib/auth/session.ts`) usa `createSupabaseServerClient()` solo para `auth.getUser()` (verificar JWT via cookies) y luego `createSupabaseServiceRoleClient()` para leer `user_roles` — esto evita el bloqueo de RLS sobre `user_roles` que impedía a usuarios no-super_admin cargar sus roles.
-- Excepciones que conservan `createSupabaseServerClient()`: `layout.tsx`, `seguridad/page.tsx`, `seguridad/actions.ts`, `mfa/enroll/*`, `mfa/challenge/*`.
+- `getAdminSessionUser()` (`lib/auth/session.ts`) usa `createSupabaseServerClient()` solo para `auth.getUser()` (verificar JWT via cookies) y luego `createSupabaseServiceRoleClient()` para leer `user_roles`.
+- Excepciones que conservan `createSupabaseServerClient()`: `admin/(protected)/layout.tsx`, `seguridad/page.tsx`, `seguridad/actions.ts`, `mfa/enroll/*`, `mfa/challenge/*`.
 
 ### Seguridad
 - Precio, stock, rol y total siempre se recalculan en servidor antes de crear un pedido.
@@ -72,6 +77,9 @@ Los tipos son **manuales**, no auto-generados. Cuando se agrega un campo a la DB
 - Siempre empezar con `await requireAdminUser([...roles])` antes de cualquier mutación.
 - Después del check, usar `createSupabaseServiceRoleClient()` para todas las operaciones de DB.
 - Usar `revalidatePath()` al final para invalidar el caché de la página afectada.
+
+### revalidatePath y checkout
+`/checkout` usa `export const dynamic = "force-dynamic"` — **no tiene caché**. Llamar `revalidatePath("/checkout")` desde server actions es un no-op. No agregar esa línea en actions de métodos de pago, pickup o delivery.
 
 ### Roles disponibles
 `super_admin` · `admin` · `inventory` · `sales`
@@ -250,8 +258,9 @@ Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_mo
 - Actions en `app/admin/(protected)/inventario/actions.ts`: `updateInventoryAction`, `updateCostAction`, `updateVariantPriceAction`, `getMovementsAction`, `deleteVariantAction`, `deleteProductFromInventoryAction`.
 
 **Sincronización precio/costo entre módulos:**
-- Editar `price_usd` desde inventario → revalida también `/admin/productos/[id]`
-- Editar `cost_usd` desde inventario → revalida también `/admin/productos/[id]`
+- Editar `price_usd` desde inventario → revalida `/admin/productos/[id]`, `/catalogo`, `/`, `/producto/[slug]`
+- Editar `cost_usd` desde inventario → revalida `/admin/productos/[id]`, `/catalogo`, `/`, `/producto/[slug]`
+- Editar stock desde inventario → revalida `/catalogo`, `/`, `/producto/[slug]`
 - Editar `price_usd`, `cost_usd` o `barcode` desde el editor de producto → revalida también `/admin/inventario`
 
 ## Sistema de banners y secciones del Home
@@ -266,6 +275,15 @@ Tablas: `inventory` (variant_id + store_id → quantity_on_hand) + `inventory_mo
 ### Admin de secciones del Home — edición inline de config
 
 `HomeSectionRow` (`components/admin/home-section-row.tsx`) incluye botón "Config" que expande un `<textarea>` con el JSON actual del campo `config`. Permite editar y guardar sin salir de la página. Action: `updateHomeSectionConfig(id, rawConfig)` en `marketing/home/actions.ts` — valida que sea objeto JSON válido antes de persistir. La página `marketing/home/page.tsx` incluye `config` en el `select()` y lo pasa a cada `HomeSectionRow`.
+
+### SectionImageEditor (`components/admin/section-image-editor.tsx`)
+
+Editor de imagen para secciones de tipo `hero`, `image_text` y `cta`. Comportamiento:
+- **Sin imagen**: muestra zona de drag-and-drop con `<input type="file">` invisible encima.
+- **Con imagen**: muestra preview + botón X (eliminar) + botón "Reemplazar imagen" con su propio `<input type="file">` — no hace falta borrar primero para cambiar.
+- **`onError` en `<img>`**: si la URL guardada en DB falla al cargar (imagen borrada de Cloudinary, etc.), limpia `preview` automáticamente y muestra la zona de upload.
+- El contenedor de preview tiene `minHeight: 64` para que el botón X siempre sea visible aunque la imagen no cargue.
+- Upload: llama a `uploadImage(file)` (`lib/storage/upload.ts`) → Cloudinary si hay vars, Supabase Storage como fallback. Luego llama a `updateHomeSectionImageUrl(id, url)` server action.
 
 ## Productos — borrado y gestión de imágenes
 
@@ -351,7 +369,7 @@ Todas las actions revalidan `/admin/entrega/sucursales`, `/admin/entrega/pickup`
 ## Home pública — reglas ISR y categorías
 
 ### ISR + cookies() — antipatrón crítico
-`app/(public)/page.tsx` usa `export const revalidate = 60`. En ese contexto **nunca** llamar a `createSupabaseServerClient()` porque internamente llama a `cookies()`, que lanza excepción en el rebuild de fondo de ISR. La excepción queda silenciada en el try/catch de Next.js y la página renderiza vacía. Solución: usar siempre `createSupabaseServiceRoleClient()` en todas las pages públicas con ISR.
+**Toda** la ruta pública usa `export const revalidate = 60`. En ese contexto **nunca** llamar a `createSupabaseServerClient()` porque internamente llama a `cookies()`, que lanza excepción en el rebuild de fondo de ISR. La excepción queda silenciada en el try/catch de Next.js y la página renderiza vacía. Solución: usar siempre `createSupabaseServiceRoleClient()` en **todo** `app/(public)/` — incluyendo el layout y las funciones helper internas. Esta regla ya está aplicada en todo el árbol público (2026-09-16).
 
 ### Categorías en el Home
 - Grid 2×5 (`grid-cols-2 sm:grid-cols-5`) en `components/home/home-section-renderer.tsx`.
@@ -360,6 +378,30 @@ Todas las actions revalidan `/admin/entrega/sucursales`, `/admin/entrega/pickup`
 
 ### Hero section
 `app/(public)/page.tsx` renderiza una sección Hero con imagen de fondo (Unsplash `photo-1483985988355-763728e1935b`) + dos gradientes superpuestos (lateral + vertical) para legibilidad del texto. No usar el bloque `"hero"` de `home_sections` para este header — es un componente fijo en la página.
+
+## Checkout (`app/(public)/checkout/`)
+
+Componente principal: `components/checkout/checkout-form.tsx` (Client Component).
+
+### Métodos de entrega
+- **Retiro en tienda** (`pickup`): selecciona sucursal.
+- **Delivery** (`delivery`): selecciona zona de delivery + dirección + punto de referencia. **No pide estado ni ciudad** — el delivery es siempre en Valencia, Carabobo, así que se hardcodean en el payload (`state: "Carabobo"`, `city: "Valencia"`). La validación Zod del servidor sí exige esos campos, pero el frontend los envía implícitamente.
+- **Envío nacional** (`shipping`): pide estado, ciudad, dirección y referencia.
+
+### Total con delivery
+El resumen de totales muestra desglose cuando hay delivery:
+- Subtotal productos
+- Delivery — {nombre de zona} (solo si `deliveryMethod === "delivery"` y hay zona seleccionada)
+- Total estimado = subtotal + costo de delivery
+
+### Métodos de pago
+Al seleccionar un método de pago, si tiene `instructions` en DB, aparece un cuadro de instrucciones con borde `#F0B8D0` y fondo `#FDF0F6`. El componente trackea `selectedMethodId` con `useState`.
+
+### Carrito con items no disponibles
+`app/(public)/carrito/page.tsx`: si algún item del carrito tiene `isAvailable === false`, el botón "Finalizar pedido" se deshabilita y muestra mensaje de error. El usuario debe quitar el item antes de continuar.
+
+### Validación del pedido
+`lib/validation/checkout.ts` → `createOrderSchema`. El Route Handler `app/api/orders/route.ts` siempre revalida precio y stock en servidor — el frontend nunca es la única validación.
 
 ## Notas sobre la DB de demo
 
