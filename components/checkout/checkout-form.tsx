@@ -33,11 +33,20 @@ export function CheckoutForm({
   const { items, subtotalUsd, refresh } = useCart();
 
   const [deliveryMethod, setDeliveryMethod] = React.useState<DeliveryMethod>("pickup");
+  const [selectedZoneId, setSelectedZoneId] = React.useState("");
   const [selectedMethodId, setSelectedMethodId] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  const selectedZone = shippingZones.find((z) => z.id === selectedZoneId) ?? null;
+  const deliveryCost = deliveryMethod === "delivery" && selectedZone ? selectedZone.cost_usd : 0;
+  const totalUsd = subtotalUsd + deliveryCost;
   const selectedMethod = paymentMethods.find((m) => m.id === selectedMethodId) ?? null;
+
+  function changeDeliveryMethod(method: DeliveryMethod) {
+    setDeliveryMethod(method);
+    if (method !== "delivery") setSelectedZoneId("");
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,8 +63,8 @@ export function CheckoutForm({
           ? {
               method: "delivery" as const,
               shippingZoneId: String(formData.get("shippingZoneId")),
-              state: String(formData.get("state")),
-              city: String(formData.get("city")),
+              state: "Carabobo",
+              city: "Valencia",
               address: String(formData.get("address")),
               reference: String(formData.get("reference") || ""),
             }
@@ -78,10 +87,6 @@ export function CheckoutForm({
       paymentMethodId: String(formData.get("paymentMethodId")),
       paymentNotes: String(formData.get("paymentNotes") || ""),
       idempotencyKey,
-      // Honeypot (sección 23 del plan: mitigar spam/bots en la creación de
-      // pedidos). Un cliente real nunca ve ni llena este campo — ver el
-      // `<input>` oculto más abajo y `createOrderSchema` en
-      // `lib/validation/checkout.ts`, que rechaza cualquier valor no vacío.
       website: String(formData.get("website") || ""),
     };
 
@@ -117,13 +122,13 @@ export function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      {/* Honeypot: invisible para una persona (fuera de pantalla, sin
-          tabIndex, con aria-hidden), pero un bot que autocompleta todos los
-          `<input>` de un formulario normalmente lo llena. */}
+      {/* Honeypot antispam */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label htmlFor="website">No completar este campo</label>
         <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
+
+      {/* Datos del cliente */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-[var(--color-muted-foreground)] uppercase">
           Tus datos
@@ -155,6 +160,7 @@ export function CheckoutForm({
         </div>
       </section>
 
+      {/* Entrega */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-[var(--color-muted-foreground)] uppercase">
           Entrega
@@ -170,7 +176,7 @@ export function CheckoutForm({
             <button
               key={value}
               type="button"
-              onClick={() => setDeliveryMethod(value)}
+              onClick={() => changeDeliveryMethod(value)}
               className={`rounded-[var(--radius-md)] border px-3 py-2 text-sm ${
                 deliveryMethod === value
                   ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
@@ -200,27 +206,39 @@ export function CheckoutForm({
               ))}
             </select>
           </div>
-        ) : (
+        ) : deliveryMethod === "delivery" ? (
           <div className="flex flex-col gap-3">
-            {deliveryMethod === "delivery" ? (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="shippingZoneId">Zona de delivery</Label>
-                <select
-                  id="shippingZoneId"
-                  name="shippingZoneId"
-                  required
-                  disabled={isSubmitting}
-                  className="h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
-                >
-                  <option value="">Selecciona tu zona</option>
-                  {shippingZones.map((zone) => (
-                    <option key={zone.id} value={zone.id}>
-                      {zone.name} — {formatUsd(zone.cost_usd)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="shippingZoneId">Zona de delivery</Label>
+              <select
+                id="shippingZoneId"
+                name="shippingZoneId"
+                required
+                disabled={isSubmitting}
+                value={selectedZoneId}
+                onChange={(e) => setSelectedZoneId(e.target.value)}
+                className="h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
+              >
+                <option value="">Selecciona tu zona</option>
+                {shippingZones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.name} — {formatUsd(zone.cost_usd)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="address">Dirección</Label>
+              <Input id="address" name="address" required disabled={isSubmitting} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="reference">Punto de referencia (opcional)</Label>
+              <Input id="reference" name="reference" disabled={isSubmitting} />
+            </div>
+          </div>
+        ) : (
+          /* Envío nacional — pide estado y ciudad */
+          <div className="flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <Label htmlFor="state">Estado</Label>
@@ -243,6 +261,7 @@ export function CheckoutForm({
         )}
       </section>
 
+      {/* Pago */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-[var(--color-muted-foreground)] uppercase">
           Pago preferido
@@ -284,9 +303,28 @@ export function CheckoutForm({
         </div>
       </section>
 
-      <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4 text-sm">
-        <span className="text-[var(--color-muted-foreground)]">Subtotal estimado</span>
-        <span className="text-lg font-semibold">{formatUsd(subtotalUsd)}</span>
+      {/* Resumen de totales */}
+      <div className="flex flex-col gap-2 border-t border-[var(--color-border)] pt-4 text-sm">
+        <div className="flex items-center justify-between text-[var(--color-muted-foreground)]">
+          <span>Subtotal productos</span>
+          <span>{formatUsd(subtotalUsd)}</span>
+        </div>
+        {deliveryMethod === "delivery" && selectedZone && (
+          <div className="flex items-center justify-between text-[var(--color-muted-foreground)]">
+            <span>Delivery — {selectedZone.name}</span>
+            <span>{formatUsd(selectedZone.cost_usd)}</span>
+          </div>
+        )}
+        {deliveryMethod === "delivery" && !selectedZone && (
+          <div className="flex items-center justify-between text-[var(--color-muted-foreground)]">
+            <span>Delivery</span>
+            <span className="italic">selecciona zona</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between font-semibold">
+          <span>Total estimado</span>
+          <span className="text-lg">{formatUsd(totalUsd)}</span>
+        </div>
       </div>
 
       {error ? <p className="text-sm text-[var(--color-error)]">{error}</p> : null}
