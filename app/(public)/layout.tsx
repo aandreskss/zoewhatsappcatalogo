@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getActivePublicIntegrations } from "@/lib/domain/integrations";
 import { getSiteContent, DEFAULT_SITE_CONTENT } from "@/lib/domain/site-content";
 import { CartProvider } from "@/components/cart/cart-context";
@@ -21,7 +21,7 @@ export default async function PublicLayout({ children }: { children: React.React
   let categories: { name: string; slug: string }[] = [];
   let content: SiteContent = DEFAULT_SITE_CONTENT;
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseServiceRoleClient();
     const [integrationsResult, categoriesResult, contentResult] = await Promise.all([
       getActivePublicIntegrations(supabase),
       supabase.from("categories").select("name, slug").eq("active", true).order("order").limit(8),

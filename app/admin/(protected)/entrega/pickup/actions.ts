@@ -20,7 +20,6 @@ export async function toggleStorePickup(id: string, enabled: boolean): Promise<v
     .eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/entrega/pickup");
-  revalidatePath("/checkout");
 }
 
 export async function toggleStoreDelivery(id: string, enabled: boolean): Promise<void> {
@@ -32,5 +31,4 @@ export async function toggleStoreDelivery(id: string, enabled: boolean): Promise
     .eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/entrega/pickup");
-  revalidatePath("/checkout");
 }

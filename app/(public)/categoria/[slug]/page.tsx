@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { listPublishedProducts } from "@/lib/domain/catalog";
 import { getVesReferenceRate } from "@/lib/domain/currency";
 import { getCartSessionId } from "@/lib/cart/session-cookie";
@@ -11,7 +11,7 @@ import { buildBreadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 export const revalidate = 60;
 
 async function getCategory(slug: string) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data } = await supabase
     .from("categories")
     .select("id, name, slug, description, seo_title, seo_description")
@@ -45,7 +45,7 @@ export default async function CategoryPage({
   const category = await getCategory(slug);
   if (!category) notFound();
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const [products, vesRate, sessionId] = await Promise.all([
     listPublishedProducts(supabase, { categorySlug: slug, limit: 48 }),
     getVesReferenceRate(supabase),

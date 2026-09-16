@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { listPublishedProducts } from "@/lib/domain/catalog";
 import { getVesReferenceRate } from "@/lib/domain/currency";
 import { ProductGrid } from "@/components/catalog/product-grid";
@@ -9,7 +9,7 @@ import { buildBreadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 export const revalidate = 60;
 
 async function getBrand(slug: string) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data } = await supabase
     .from("brands")
     .select("id, name, slug, description")
@@ -43,7 +43,7 @@ export default async function BrandPage({
   const brand = await getBrand(slug);
   if (!brand) notFound();
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const [products, vesRate] = await Promise.all([
     listPublishedProducts(supabase, { brandSlug: slug, limit: 48 }),
     getVesReferenceRate(supabase),

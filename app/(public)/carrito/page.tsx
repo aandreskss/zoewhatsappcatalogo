@@ -15,6 +15,7 @@ import { formatUsd } from "@/lib/domain/pricing";
  */
 export default function CartPage() {
   const { items, isLoading, subtotalUsd, updateQuantity, removeItem } = useCart();
+  const hasUnavailableItems = items.some((item) => !item.isAvailable);
   const track = useAnalytics();
 
   if (isLoading) {
@@ -118,18 +119,29 @@ export default function CartPage() {
         <span className="text-lg font-semibold">{formatUsd(subtotalUsd)}</span>
       </div>
 
-      <Button asChild size="lg" className="mt-4 w-full">
-        <Link
-          href="/checkout"
-          onClick={() =>
-            track("begin_checkout", {
-              metadata: { itemCount: items.length, subtotalUsd },
-            })
-          }
-        >
-          Finalizar pedido
-        </Link>
-      </Button>
+      {hasUnavailableItems ? (
+        <div className="mt-4 flex flex-col gap-2">
+          <p className="text-sm text-[var(--color-error)]">
+            Algunos productos ya no están disponibles. Quítalos del carrito para continuar.
+          </p>
+          <Button size="lg" className="w-full" disabled>
+            Finalizar pedido
+          </Button>
+        </div>
+      ) : (
+        <Button asChild size="lg" className="mt-4 w-full">
+          <Link
+            href="/checkout"
+            onClick={() =>
+              track("begin_checkout", {
+                metadata: { itemCount: items.length, subtotalUsd },
+              })
+            }
+          >
+            Finalizar pedido
+          </Link>
+        </Button>
+      )}
     </main>
   );
 }

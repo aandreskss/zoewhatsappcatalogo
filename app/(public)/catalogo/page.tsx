@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { listPublishedProducts } from "@/lib/domain/catalog";
 import { getVesReferenceRate } from "@/lib/domain/currency";
 import { getSiteContent, DEFAULT_SITE_CONTENT } from "@/lib/domain/site-content";
@@ -42,7 +42,7 @@ export default async function CatalogoPage({
   searchParams: Promise<CatalogSearchParams>;
 }) {
   const { categoria, marca, q, precio_min, precio_max, orden } = await searchParams;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const sort = orden === "precio_asc" || orden === "precio_desc" ? orden : "recientes";
 

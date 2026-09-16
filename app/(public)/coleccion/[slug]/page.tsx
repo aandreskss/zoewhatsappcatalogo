@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { listPublishedProducts, type ProductListItem } from "@/lib/domain/catalog";
 import { getVesReferenceRate } from "@/lib/domain/currency";
 import { ProductGrid } from "@/components/catalog/product-grid";
@@ -9,7 +9,7 @@ import { buildBreadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 export const revalidate = 60;
 
 async function getCollection(slug: string) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const { data } = await supabase
     .from("collections")
     .select("id, name, slug, description, type, rule, seo_title, seo_description")
@@ -26,7 +26,7 @@ async function getCollection(slug: string) {
  * porque el precio real vive en `product_variants`, no en `products`.
  */
 async function getCollectionProducts(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  supabase: ReturnType<typeof createSupabaseServiceRoleClient>,
   collection: NonNullable<Awaited<ReturnType<typeof getCollection>>>,
 ): Promise<ProductListItem[]> {
   if (collection.type === "manual") {
@@ -86,7 +86,7 @@ export default async function CollectionPage({
   const collection = await getCollection(slug);
   if (!collection) notFound();
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const [products, vesRate] = await Promise.all([
     getCollectionProducts(supabase, collection),
     getVesReferenceRate(supabase),

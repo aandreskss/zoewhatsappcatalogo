@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/db/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { getPublishedProductBySlug } from "@/lib/domain/catalog";
 import { getAvailabilityForVariants } from "@/lib/domain/inventory";
 import { getVesReferenceRate } from "@/lib/domain/currency";
@@ -20,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
   const product = await getPublishedProductBySlug(supabase, slug);
   if (!product) return {};
 
@@ -54,7 +54,7 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServiceRoleClient();
 
   const product = await getPublishedProductBySlug(supabase, slug);
   if (!product) notFound();

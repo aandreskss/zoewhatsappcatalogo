@@ -49,6 +49,18 @@ export async function updateInventoryAction(
   });
 
   revalidatePath("/admin/inventario");
+  revalidatePath("/catalogo");
+  revalidatePath("/");
+
+  // Revalidar la página pública del producto si podemos obtener el slug
+  const { data: variantData } = await supabase
+    .from("product_variants")
+    .select("products(slug)")
+    .eq("id", variantId)
+    .maybeSingle();
+  const slug = (variantData?.products as { slug?: string } | null)?.slug;
+  if (slug) revalidatePath(`/producto/${slug}`);
+
   return { error: null };
 }
 
@@ -72,7 +84,17 @@ export async function updateCostAction(
     .maybeSingle();
 
   revalidatePath("/admin/inventario");
-  if (variant?.product_id) revalidatePath(`/admin/productos/${variant.product_id}`);
+  revalidatePath("/catalogo");
+  revalidatePath("/");
+  if (variant?.product_id) {
+    revalidatePath(`/admin/productos/${variant.product_id}`);
+    const { data: productData } = await supabase
+      .from("products")
+      .select("slug")
+      .eq("id", variant.product_id)
+      .maybeSingle();
+    if (productData?.slug) revalidatePath(`/producto/${productData.slug}`);
+  }
   return { error: null };
 }
 
@@ -97,7 +119,17 @@ export async function updateVariantPriceAction(
     .maybeSingle();
 
   revalidatePath("/admin/inventario");
-  if (variant?.product_id) revalidatePath(`/admin/productos/${variant.product_id}`);
+  revalidatePath("/catalogo");
+  revalidatePath("/");
+  if (variant?.product_id) {
+    revalidatePath(`/admin/productos/${variant.product_id}`);
+    const { data: productData } = await supabase
+      .from("products")
+      .select("slug")
+      .eq("id", variant.product_id)
+      .maybeSingle();
+    if (productData?.slug) revalidatePath(`/producto/${productData.slug}`);
+  }
   return { error: null };
 }
 

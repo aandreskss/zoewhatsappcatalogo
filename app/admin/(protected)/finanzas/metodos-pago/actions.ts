@@ -49,7 +49,6 @@ export async function togglePaymentMethodActive(
     .eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/finanzas/metodos-pago");
-  revalidatePath("/checkout");
 }
 
 export async function updatePaymentMethod(
@@ -82,5 +81,4 @@ export async function deletePaymentMethod(id: string): Promise<void> {
   const { error } = await supabase.from("payment_methods").delete().eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/finanzas/metodos-pago");
-  revalidatePath("/checkout");
 }
