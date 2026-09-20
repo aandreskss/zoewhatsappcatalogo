@@ -60,11 +60,11 @@ const nextConfig: NextConfig = {
     // contra XSS de terceros no autorizados.
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://analytics.tiktok.com",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://analytics.tiktok.com https://sync-lead-eight.vercel.app",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://*.supabase.co https://res.cloudinary.com https://placehold.co https://www.facebook.com https://analytics.tiktok.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co https://api.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://analytics.tiktok.com https://www.facebook.com",
+      "connect-src 'self' https://*.supabase.co https://api.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://analytics.tiktok.com https://www.facebook.com https://sync-lead-eight.vercel.app",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
