@@ -56,6 +56,8 @@ export default async function OrderConfirmationPage({
           whatsappLink={whatsappLink}
           message={order.whatsapp_message_sent ?? ""}
           phone={order.whatsapp_number_used ?? ""}
+          orderNumber={order.order_number}
+          totalUsd={order.total_usd}
         />
       ) : (
         <p className="text-sm text-[var(--color-error)]">

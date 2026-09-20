@@ -4,6 +4,10 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useAnalytics } from "@/components/analytics/analytics-provider";
 
+declare global {
+  interface Window { fbq?: (...args: unknown[]) => void }
+}
+
 /**
  * Botón principal de WhatsApp + fallback SIEMPRE visible (sección 17/83
  * del plan): si el popup se bloquea o WhatsApp no está instalado, el
@@ -15,10 +19,14 @@ export function WhatsAppCta({
   whatsappLink,
   message,
   phone,
+  orderNumber,
+  totalUsd,
 }: {
   whatsappLink: string;
   message: string;
   phone: string;
+  orderNumber?: string;
+  totalUsd?: number;
 }) {
   const [copied, setCopied] = React.useState<"message" | "phone" | null>(null);
   const track = useAnalytics();
@@ -36,7 +44,14 @@ export function WhatsAppCta({
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => track("whatsapp_clicked")}
+          onClick={() => {
+            track("whatsapp_clicked");
+            window.fbq?.("track", "Purchase", {
+              value: totalUsd ?? 0,
+              currency: "USD",
+              order_id: orderNumber ?? "",
+            });
+          }}
         >
           Enviar pedido por WhatsApp
         </a>
