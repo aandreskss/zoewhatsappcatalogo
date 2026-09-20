@@ -88,6 +88,21 @@ export async function changeOrderStatus(
   revalidatePath(`/admin/pedidos/${orderId}`);
 }
 
+export async function deleteOrderAction(orderId: string): Promise<{ error: string | null }> {
+  const admin = await requireAdminUser(["super_admin", "admin"]);
+  const supabase = createSupabaseServiceRoleClient();
+
+  const { error } = await supabase.rpc("delete_order_with_restoration", {
+    p_order_id: orderId,
+    p_user_id: admin.id,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/pedidos");
+  return { error: null };
+}
+
 const noteSchema = z.string().trim().min(1, "La nota no puede estar vacía").max(1000);
 
 export interface FormState {

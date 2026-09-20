@@ -5,6 +5,7 @@ import { formatUsd, formatVes } from "@/lib/domain/pricing";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { AddOrderNoteForm } from "@/components/admin/add-order-note-form";
 import { orderStatusLabel } from "@/lib/domain/order-status";
+import { DeleteOrderButton } from "@/components/admin/delete-order-button";
 
 export const dynamic = "force-dynamic";
 
@@ -32,12 +33,12 @@ export default async function AdminOrderDetailPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, order_number, status, subtotal_usd, discount_usd, shipping_estimate_usd, total_usd, exchange_rate_used, exchange_rate_currency_pair, delivery_method, payment_notes, whatsapp_number_used, whatsapp_message_sent, whatsapp_opened_at, created_at, customer_id, store_id, delivery_address_id, payment_method_id, shipping_zone_id",
+      "id, order_number, status, subtotal_usd, discount_usd, shipping_estimate_usd, total_usd, exchange_rate_used, exchange_rate_currency_pair, delivery_method, payment_notes, whatsapp_number_used, whatsapp_message_sent, whatsapp_opened_at, created_at, customer_id, store_id, delivery_address_id, payment_method_id, shipping_zone_id, deleted_at",
     )
     .eq("id", id)
     .maybeSingle();
 
-  if (!order) notFound();
+  if (!order || order.deleted_at) notFound();
 
   const [
     { data: customer },
@@ -112,8 +113,11 @@ export default async function AdminOrderDetailPage({
             {new Date(order.created_at).toLocaleString("es-VE")}
           </p>
         </div>
-        <div className="w-56">
-          <OrderStatusSelect orderId={order.id} status={order.status} />
+        <div className="flex items-center gap-3">
+          <div className="w-56">
+            <OrderStatusSelect orderId={order.id} status={order.status} />
+          </div>
+          <DeleteOrderButton orderId={order.id} />
         </div>
       </div>
 

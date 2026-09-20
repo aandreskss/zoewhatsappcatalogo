@@ -96,10 +96,17 @@ export async function getCartWithItems(
   if (variantsError) throw variantsError;
 
   const productIds = [...new Set((variants ?? []).map((v) => v.product_id))];
-  const { data: products, error: productsError } = await supabase
-    .from("products")
-    .select("id, name, slug, status, deleted_at")
-    .in("id", productIds);
+  const [{ data: products, error: productsError }, { data: primaryImages }] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id, name, slug, status, deleted_at")
+      .in("id", productIds),
+    supabase
+      .from("product_images")
+      .select("product_id, url")
+      .in("product_id", productIds)
+      .eq("is_primary", true),
+  ]);
   if (productsError) throw productsError;
 
   const productsById = new Map((products ?? []).map((p) => [p.id, p]));
@@ -113,6 +120,10 @@ export async function getCartWithItems(
     list.push(value);
     labelsByVariant.set(link.variant_id, list);
   }
+
+  const primaryImageByProduct = new Map<string, string>(
+    (primaryImages ?? []).filter((img) => img.url).map((img) => [img.product_id, img.url]),
+  );
 
   const imageByVariant = new Map<string, string>();
   for (const link of imageLinks ?? []) {
@@ -135,7 +146,10 @@ export async function getCartWithItems(
         productSlug: product.slug,
         variantLabel: (labelsByVariant.get(item.variant_id) ?? []).join(" / ") || "—",
         currentPriceUsd: variant.price_usd,
-        imageUrl: imageByVariant.get(item.variant_id) ?? null,
+        imageUrl:
+          imageByVariant.get(item.variant_id) ??
+          primaryImageByProduct.get(variant.product_id) ??
+          null,
         isAvailable:
           variant.status === "active" &&
           product.status === "published" &&

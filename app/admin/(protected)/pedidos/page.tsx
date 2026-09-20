@@ -30,6 +30,7 @@ export default async function AdminOrdersPage({
   let query = supabase
     .from("orders")
     .select("id, order_number, status, total_usd, delivery_method, created_at, customer_id")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(100);
 

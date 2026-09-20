@@ -566,6 +566,7 @@ export interface Database {
           whatsapp_opened_at: string | null;
           created_at: string;
           updated_at: string;
+          deleted_at: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["orders"]["Row"]> & {
           customer_id: string;
@@ -1027,6 +1028,10 @@ export interface Database {
         Returns: void;
       };
       release_order_reservations: { Args: { p_order_id: string }; Returns: void };
+      delete_order_with_restoration: {
+        Args: { p_order_id: string; p_user_id?: string | null };
+        Returns: undefined;
+      };
       // Función atómica de creación de pedido (ver 0014_create_order_function.sql):
       // recibe el pedido y sus líneas como JSON, reserva inventario y devuelve
       // una tabla (por eso Returns es un arreglo) — `is_replay` distingue una
