@@ -341,15 +341,18 @@ export async function createOrder(
     paymentMethodLabel: paymentMethod?.name ?? "—",
   });
 
-  if (!order.is_replay) {
-    await supabase
-      .from("orders")
-      .update({
-        whatsapp_number_used: whatsappNumber,
-        whatsapp_message_sent: whatsappMessage,
-      })
-      .eq("id", order.id);
+  // Siempre actualizar los campos de WhatsApp — incluso en replay, para
+  // cubrir el caso en que el primer intento falló antes de persistirlos
+  // (ej. WhatsApp no configurado en ese momento).
+  await supabase
+    .from("orders")
+    .update({
+      whatsapp_number_used: whatsappNumber,
+      whatsapp_message_sent: whatsappMessage,
+    })
+    .eq("id", order.id);
 
+  if (!order.is_replay) {
     // checkout_completed solo se registra la primera vez que se crea el
     // pedido (nunca en un replay por idempotencia). Se usa el propio
     // order.id como clientEventId: es un uuid estable por pedido, así que
