@@ -17,7 +17,7 @@ type DB = SupabaseClient<Database>;
 export class CartError extends Error {
   constructor(
     message: string,
-    public code: "VARIANT_NOT_AVAILABLE" | "ITEM_NOT_FOUND" | "INVALID_QUANTITY",
+    public code: "VARIANT_NOT_AVAILABLE" | "ITEM_NOT_FOUND" | "INVALID_QUANTITY" | "OUT_OF_STOCK",
   ) {
     super(message);
   }
@@ -174,6 +174,20 @@ export async function addItemToCart(
     variant.products.deleted_at
   ) {
     throw new CartError("Esta variante ya no está disponible", "VARIANT_NOT_AVAILABLE");
+  }
+
+  // Verificar stock disponible usando la vista variant_availability
+  // (on_hand - reservas activas), igual que la página del producto.
+  const { data: stockRows } = await supabase
+    .from("variant_availability")
+    .select("available")
+    .eq("variant_id", variantId);
+  const totalAvailable = (stockRows ?? []).reduce(
+    (sum, row) => sum + Math.max(0, row.available),
+    0,
+  );
+  if (totalAvailable <= 0) {
+    throw new CartError("Este producto está agotado.", "OUT_OF_STOCK");
   }
 
   const cart = await getOrCreateActiveCart(supabase, sessionId);

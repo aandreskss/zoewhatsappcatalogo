@@ -90,18 +90,20 @@ export function CheckoutForm({
       website: String(formData.get("website") || ""),
     };
 
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = (await res.json()) as {
-      orderNumber?: string;
-      publicAccessToken?: string;
-      whatsappLink?: string;
-      error?: string;
-    };
+    let res: Response;
+    let data: { orderNumber?: string; publicAccessToken?: string; whatsappLink?: string; error?: string };
+    try {
+      res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      data = (await res.json()) as typeof data;
+    } catch {
+      setIsSubmitting(false);
+      setError("Error de conexión. Verifica tu internet e intenta de nuevo.");
+      return;
+    }
 
     if (!res.ok || !data.orderNumber || !data.publicAccessToken || !data.whatsappLink) {
       setIsSubmitting(false);

@@ -90,6 +90,10 @@ export async function POST(request: Request) {
       const status = err.code === "INSUFFICIENT_STOCK" ? 409 : 400;
       return NextResponse.json({ error: err.message, code: err.code }, { status });
     }
-    throw err;
+    console.error("[api/orders] Unexpected error:", err);
+    return NextResponse.json(
+      { error: "Error inesperado al procesar el pedido. Intenta de nuevo." },
+      { status: 500 },
+    );
   }
 }
