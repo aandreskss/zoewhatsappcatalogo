@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { buildWhatsAppLink } from "@/lib/domain/whatsapp-shared";
 import { formatUsd } from "@/lib/domain/pricing";
 import { WhatsAppCta } from "@/components/checkout/whatsapp-cta";
+import { LeadTracker } from "@/components/checkout/lead-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export default async function OrderConfirmationPage({
 
   return (
     <main className="mx-auto flex max-w-lg flex-col items-center gap-4 px-4 py-12 text-center">
+      <LeadTracker orderNumber={order.order_number} totalUsd={order.total_usd} />
       <h1 className="text-2xl font-semibold">¡Pedido registrado!</h1>
       <p className="text-[var(--color-muted-foreground)]">
         Tu pedido{" "}

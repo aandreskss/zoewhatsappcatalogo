@@ -10,6 +10,10 @@ import { useAnalytics } from "@/components/analytics/analytics-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+declare global {
+  interface Window { fbq?: (...args: unknown[]) => void }
+}
+
 /**
  * Selector de color/talla + agregar al carrito (sección 13/18/20 del
  * plan). Genérico sobre `product.options` — no asume que las opciones se
@@ -66,6 +70,13 @@ export function ProductVariantPicker({
         entityType: "product_variant",
         entityId: matchedVariant.id,
         metadata: { productId: product.id, productName: product.name },
+      });
+      window.fbq?.("track", "AddToCart", {
+        value: matchedVariant.priceUsd,
+        currency: "USD",
+        content_ids: [matchedVariant.id],
+        content_type: "product",
+        content_name: product.name,
       });
       router.refresh();
     }

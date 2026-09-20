@@ -8,6 +8,10 @@ import { Label } from "@/components/ui/label";
 import { useCart } from "@/components/cart/cart-context";
 import { formatUsd } from "@/lib/domain/pricing";
 
+declare global {
+  interface Window { fbq?: (...args: unknown[]) => void }
+}
+
 const IDEMPOTENCY_KEY_STORAGE = "zoe_checkout_idempotency_key";
 
 function getOrCreateIdempotencyKey(): string {
@@ -52,6 +56,12 @@ export function CheckoutForm({
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
+
+    window.fbq?.("track", "InitiateCheckout", {
+      value: totalUsd,
+      currency: "USD",
+      num_items: items.length,
+    });
 
     const formData = new FormData(event.currentTarget);
     const idempotencyKey = getOrCreateIdempotencyKey();
