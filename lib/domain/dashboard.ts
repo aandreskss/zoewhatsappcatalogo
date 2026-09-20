@@ -39,11 +39,13 @@ export async function getOrderKpis(supabase: DB, days: number): Promise<PeriodOr
   const { data: current } = await supabase
     .from("orders")
     .select("total_usd, status")
+    .is("deleted_at", null)
     .gte("created_at", periodStart.toISOString());
 
   const { data: previous } = await supabase
     .from("orders")
     .select("total_usd")
+    .is("deleted_at", null)
     .gte("created_at", previousStart.toISOString())
     .lt("created_at", periodStart.toISOString());
 
@@ -231,6 +233,7 @@ export async function getTopStore(
   const { data } = await supabase
     .from("orders")
     .select("store_id, stores(name)")
+    .is("deleted_at", null)
     .not("store_id", "is", null)
     .gte("created_at", since)
     .limit(2000);
