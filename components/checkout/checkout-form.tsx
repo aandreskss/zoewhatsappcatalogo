@@ -9,7 +9,13 @@ import { useCart } from "@/components/cart/cart-context";
 import { formatUsd } from "@/lib/domain/pricing";
 
 declare global {
-  interface Window { fbq?: (...args: unknown[]) => void }
+  interface Window {
+    fbq?: (...args: unknown[]) => void
+    SyncLead?: {
+      capture:  (d: Record<string, string>) => Promise<unknown>
+      purchase: (d: Record<string, unknown>) => Promise<unknown>
+    }
+  }
 }
 
 const IDEMPOTENCY_KEY_STORAGE = "zoe_checkout_idempotency_key";
@@ -122,6 +128,13 @@ export function CheckoutForm({
     }
 
     sessionStorage.removeItem(IDEMPOTENCY_KEY_STORAGE);
+
+    void window.SyncLead?.capture({
+      name:  `${payload.customer.firstName} ${payload.customer.lastName}`.trim(),
+      email: payload.customer.email ?? "",
+      phone: payload.customer.phone,
+    });
+
     await refresh();
 
     const confirmUrl = `/checkout/confirmacion?order=${encodeURIComponent(data.orderNumber)}&token=${encodeURIComponent(data.publicAccessToken)}`;
