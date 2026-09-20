@@ -46,9 +46,7 @@ export function WhatsAppCta({
           rel="noopener noreferrer"
           onClick={() => {
             track("whatsapp_clicked");
-            window.fbq?.("track", "Purchase", {
-              value: totalUsd ?? 0,
-              currency: "USD",
+            window.fbq?.("track", "Contact", {
               order_id: orderNumber ?? "",
             });
           }}
