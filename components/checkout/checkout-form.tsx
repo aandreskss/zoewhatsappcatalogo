@@ -133,11 +133,12 @@ export function CheckoutForm({
 
     sessionStorage.removeItem(IDEMPOTENCY_KEY_STORAGE);
 
-    void window.SyncLead?.capture({
+    const slPayload: Record<string, string> = {
       name:  `${payload.customer.firstName} ${payload.customer.lastName}`.trim(),
-      email: payload.customer.email ?? "",
       phone: payload.customer.phone,
-    });
+    };
+    if (payload.customer.email) slPayload.email = payload.customer.email;
+    void window.SyncLead?.capture(slPayload);
 
     await refresh();
 
