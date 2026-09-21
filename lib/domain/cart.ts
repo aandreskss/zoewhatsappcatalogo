@@ -190,6 +190,20 @@ export async function addItemToCart(
     throw new CartError("Esta variante ya no está disponible", "VARIANT_NOT_AVAILABLE");
   }
 
+  const cart = await getOrCreateActiveCart(supabase, sessionId);
+
+  // Leer cuánto hay ya en el carrito ANTES de consultar el stock, para
+  // que la comparación sea: (en_carrito + cantidad_solicitada) ≤ disponible.
+  const { data: existingItem } = await supabase
+    .from("cart_items")
+    .select("id, quantity")
+    .eq("cart_id", cart.id)
+    .eq("variant_id", variantId)
+    .maybeSingle();
+
+  const currentInCart = existingItem?.quantity ?? 0;
+  const totalRequested = currentInCart + quantity;
+
   // Verificar stock disponible usando la vista variant_availability
   // (on_hand - reservas activas), igual que la página del producto.
   const { data: stockRows } = await supabase
@@ -200,23 +214,22 @@ export async function addItemToCart(
     (sum, row) => sum + Math.max(0, row.available),
     0,
   );
+
   if (totalAvailable <= 0) {
     throw new CartError("Este producto está agotado.", "OUT_OF_STOCK");
   }
-
-  const cart = await getOrCreateActiveCart(supabase, sessionId);
-
-  const { data: existingItem } = await supabase
-    .from("cart_items")
-    .select("id, quantity")
-    .eq("cart_id", cart.id)
-    .eq("variant_id", variantId)
-    .maybeSingle();
+  if (totalRequested > totalAvailable) {
+    const msg =
+      currentInCart > 0
+        ? `Solo quedan ${totalAvailable} unidades disponibles. Ya tienes ${currentInCart} en el carrito.`
+        : `Solo quedan ${totalAvailable} unidades disponibles.`;
+    throw new CartError(msg, "OUT_OF_STOCK");
+  }
 
   if (existingItem) {
     const { error } = await supabase
       .from("cart_items")
-      .update({ quantity: existingItem.quantity + quantity })
+      .update({ quantity: totalRequested })
       .eq("id", existingItem.id);
     if (error) throw error;
     return;
