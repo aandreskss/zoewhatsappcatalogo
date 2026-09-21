@@ -69,9 +69,10 @@ Los tipos son **manuales**, no auto-generados. Cuando se agrega un campo a la DB
 - Precio, stock, rol y total siempre se recalculan en servidor antes de crear un pedido.
 - RLS activo en todas las tablas de negocio. La clave `anon` solo lee catálogo publicado.
 - `SUPABASE_SERVICE_ROLE_KEY` es secreto de servidor — nunca exponer al cliente.
-- CSP configurado en `next.config.ts`. Al integrar un nuevo servicio externo, agregar su dominio a `connect-src` e `img-src` según corresponda.
+- CSP configurado en `next.config.ts`. Al integrar un nuevo servicio externo, agregar su dominio a `connect-src` e `img-src` según corresponda. Dominios ya autorizados: Supabase, Cloudinary, GA4, GTM, Meta, TikTok, `sync-lead-eight.vercel.app`.
 - Migración `0025_fix_user_roles_read_own.sql`: agrega policy `user_read_own_roles` en `user_roles` — defensa en profundidad para que usuarios autenticados lean sus propias filas vía RLS.
 - Migración `0026_allow_duplicate_sku.sql`: elimina el constraint `UNIQUE` de `products.sku` y `product_variants.sku`. El SKU identifica un modelo/estilo, no un registro único — el mismo SKU puede repetirse en distintos colores o tallas.
+- Migración `0027_delete_order.sql`: agrega columna `deleted_at timestamptz` en `orders` (soft-delete) y RPC `delete_order_with_restoration(p_order_id, p_user_id)`. Antes de correr en Supabase, asegurarse de que el RPC no exista — es idempotente con `CREATE OR REPLACE`.
 
 ### Server Actions
 - Siempre empezar con `await requireAdminUser([...roles])` antes de cualquier mutación.
@@ -151,6 +152,7 @@ El backdrop también usa `transition` como estilo inline (`opacity 280ms ease`).
 - **Unsplash**: imágenes de demo. Dominio `images.unsplash.com` ya en `remotePatterns` de `next.config.ts`.
 - **Fina Partner**: sin API pública. Integración vía CSV unidireccional (Fina → Zoe) desde `/admin/integraciones/fina`. Ver sección detallada abajo.
 - **Google Search Console**: verificación vía meta tag. El código se guarda en `integrations` con provider `google_search_console` y se inyecta en `generateMetadata()` del root layout.
+- **SyncLead**: CRM de leads. Scripts en `app/layout.tsx` (`sl-config` + `sl.js` + colector diagnóstico). Ver sección "SyncLead" abajo.
 
 ## Integración Fina Partner (detalle)
 
@@ -444,6 +446,90 @@ Los textos y datos de contacto por defecto viven en `lib/domain/site-content-typ
 - `customer-tags-editor` — editor de etiquetas con autocompletado
 
 El detalle de pedido (`/admin/pedidos/[id]`) incluye enlace "Ver perfil de cliente →" al perfil del CRM.
+
+## Pedidos — borrado con restauración de inventario
+
+**Migración:** `supabase/migrations/0027_delete_order.sql`
+
+**Columna soft-delete:** `orders.deleted_at timestamptz NULL` — un pedido borrado conserva todas sus filas; solo se marca con la fecha de borrado.
+
+**RPC `delete_order_with_restoration(p_order_id uuid, p_user_id uuid)`** — función atómica en Postgres:
+1. Reservas `active` → `released`
+2. Reservas `converted` → restaura `inventory.quantity_on_hand` y registra movimiento `liberacion` en `inventory_movements`
+3. Escribe `orders.deleted_at = now()`
+
+**Reglas de código:**
+- Todas las queries sobre `orders` en el admin y en el dashboard deben filtrar `.is("deleted_at", null)` — incluyendo el `getOrderKpis` y `getTopStore` en `lib/domain/dashboard.ts`.
+- El detalle de pedido `app/admin/(protected)/pedidos/[id]/page.tsx` incluye `deleted_at` en el SELECT y redirige a 404 si `order.deleted_at` no es null.
+- `lib/db/supabase/types.ts` tiene la firma del RPC declarada manualmente en `Database.Functions`.
+
+**Componente:** `components/admin/delete-order-button.tsx` — botón destructivo con confirmación inline de dos pasos. Llama al RPC vía Server Action `deleteOrderAction` en `pedidos/actions.ts`. Solo visible para `super_admin` y `admin`.
+
+---
+
+## Meta Pixel — eventos de conversión
+
+**Pixel ID:** `1112235998051036` — se configura desde `/admin/integraciones/analytics`.
+
+**Importante — modelo de negocio:** Zoe es un catálogo WhatsApp. El pedido se *registra* en la app pero la *venta real* se concreta cuando el cliente paga por WhatsApp. Por eso **no se dispara `Purchase` automáticamente**.
+
+| Evento | Cuándo | Dónde en el código |
+|---|---|---|
+| `PageView` | Cada cambio de ruta (SPA) | `components/analytics/pixel-page-view.tsx` via `usePathname` |
+| `AddToCart` | Usuario agrega variante al carrito | `components/product/product-variant-picker.tsx` |
+| `InitiateCheckout` | Página de checkout monta con carrito no vacío | `components/checkout/checkout-form.tsx` (useEffect al montar) |
+| `Lead` | Pedido registrado exitosamente | `components/checkout/lead-tracker.tsx` (montado en `/checkout/confirmacion`) |
+| `Contact` | Usuario abre WhatsApp desde la confirmación | `components/checkout/whatsapp-cta.tsx` (onClick del botón) |
+| `Purchase` | **Manual** — admin confirma pago recibido por WhatsApp | Pendiente: botón en `/admin/pedidos/[id]` que llame `SyncLead.purchase()` |
+
+**PageView en SPA:** `components/analytics/pixel-page-view.tsx` usa `usePathname()` + `useEffect` para disparar `fbq('track', 'PageView')` en cada navegación client-side. Salta el primer render porque el snippet de init del pixel (`ThirdPartyScripts`) ya dispara el PageView de carga inicial. Está montado en `app/(public)/layout.tsx` junto a `<ThirdPartyScripts>`.
+
+**InitiateCheckout en useEffect:** se movió de `handleSubmit` (tenía race condition con `fbevents.js` aún cargando) a `useEffect([], [])` al montar el componente — semánticamente correcto ("usuario abrió checkout") y técnicamente más robusto.
+
+Todos los componentes que disparan `fbq` tienen `declare global { interface Window { fbq?: (...args: unknown[]) => void } }` para no depender de un tipo global compartido.
+
+---
+
+## SyncLead
+
+**Qué es:** plataforma CRM + diagnóstico de leads. Captura contactos, asocia eventos de pixel y permite registrar compras manualmente.
+
+**Scripts en `app/layout.tsx`** (tres bloques, todos coexisten):
+1. `sl-config` (`beforeInteractive`) — configura la clave y el host antes de que cargue el SDK
+2. `sl.js` (`afterInteractive`) — SDK principal, expone `window.SyncLead.capture()` y `window.SyncLead.purchase()`
+3. `synclead-collector` (`afterInteractive`) — IIFE diagnóstica; envía cada evento `fbq` al panel de diagnóstico en tiempo real (no reemplazar ni eliminar)
+
+**Claves de Zoe:**
+- `SyncLeadKey`: `slk_77cc400fe5c0ac8f272a8c6b4d806f42afc71186e850bc96`
+- Token diagnóstico: `de3f204ae3e78bd02bca59adbe09e35f02d6635dbe6f6289`
+- Host: `https://sync-lead-eight.vercel.app`
+
+**CSP (`next.config.ts`):** `sync-lead-eight.vercel.app` ya está en `script-src` y `connect-src`. Sin esto el script no carga y los `fetch()` del colector fallan silenciosamente.
+
+**`window.SyncLead` en `Window`** declarado en `components/checkout/checkout-form.tsx`:
+```typescript
+declare global {
+  interface Window {
+    SyncLead?: {
+      capture:  (d: Record<string, string>) => Promise<unknown>
+      purchase: (d: Record<string, unknown>) => Promise<unknown>
+    }
+  }
+}
+```
+
+**`capture()`** — llamar después de crear el pedido en `checkout-form.tsx`:
+```typescript
+void window.SyncLead?.capture({
+  name:  `${firstName} ${lastName}`.trim(),
+  email: email ?? "",
+  phone: phone,
+});
+```
+
+**`purchase()`** — registrar manualmente desde el admin cuando el pago se confirma por WhatsApp. **No disparar automáticamente** — el clic en WhatsApp no es una venta confirmada. Implementación pendiente en `/admin/pedidos/[id]`.
+
+---
 
 ## Cuentas de infraestructura
 
