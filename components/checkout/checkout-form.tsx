@@ -48,6 +48,16 @@ export function CheckoutForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (items.length === 0) return;
+    window.fbq?.("track", "InitiateCheckout", {
+      value: subtotalUsd,
+      currency: "USD",
+      num_items: items.length,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const selectedZone = shippingZones.find((z) => z.id === selectedZoneId) ?? null;
   const deliveryCost = deliveryMethod === "delivery" && selectedZone ? selectedZone.cost_usd : 0;
   const totalUsd = subtotalUsd + deliveryCost;
@@ -62,12 +72,6 @@ export function CheckoutForm({
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
-
-    window.fbq?.("track", "InitiateCheckout", {
-      value: totalUsd,
-      currency: "USD",
-      num_items: items.length,
-    });
 
     const formData = new FormData(event.currentTarget);
     const idempotencyKey = getOrCreateIdempotencyKey();
