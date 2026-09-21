@@ -133,13 +133,11 @@ export function CheckoutForm({
 
     sessionStorage.removeItem(IDEMPOTENCY_KEY_STORAGE);
 
-    try {
-      await window.SyncLead?.capture({
-        name:  `${payload.customer.firstName} ${payload.customer.lastName}`.trim(),
-        email: payload.customer.email ?? "",
-        phone: payload.customer.phone,
-      });
-    } catch {}
+    void window.SyncLead?.capture({
+      name:  `${payload.customer.firstName} ${payload.customer.lastName}`.trim(),
+      email: payload.customer.email ?? "",
+      phone: payload.customer.phone,
+    });
 
     await refresh();
 
