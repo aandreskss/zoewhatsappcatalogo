@@ -30,6 +30,7 @@ import {
   Activity,
   ArrowLeftRight,
   UserCog,
+  Route,
   LogOut,
   Menu,
   X,
@@ -97,6 +98,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Sistema",
     items: [
       { href: "/admin/integraciones/analytics", label: "Analítica", icon: BarChart2 },
+      { href: "/admin/visitantes", label: "Visitantes", icon: Route },
       { href: "/admin/integraciones/fina", label: "Fina Partner", icon: ArrowLeftRight },
       { href: "/admin/reportes", label: "Reportes", icon: FileText },
       { href: "/admin/apariencia/branding", label: "Branding", icon: Palette },
