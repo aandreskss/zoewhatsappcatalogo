@@ -3,6 +3,7 @@ import { getHomeSections } from "@/lib/domain/home";
 import { getVesReferenceRate } from "@/lib/domain/currency";
 import { getSiteContent, DEFAULT_SITE_CONTENT } from "@/lib/domain/site-content";
 import { HomeSectionRenderer } from "@/components/home/home-section-renderer";
+import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { buildOrganizationJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 import Link from "next/link";
 import Image from "next/image";
@@ -32,6 +33,7 @@ export default async function HomePage() {
 
   return (
     <div className="bg-[var(--color-background)]">
+      <PageViewTracker page="home" />
       <script {...jsonLdScriptProps(organizationJsonLd)} />
 
       {/* HERO */}

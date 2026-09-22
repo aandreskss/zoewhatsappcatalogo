@@ -7,6 +7,7 @@ import { getCartSessionId } from "@/lib/cart/session-cookie";
 import { trackEvent } from "@/lib/domain/analytics";
 import { ProductGrid } from "@/components/catalog/product-grid";
 import { CatalogFiltersBar } from "@/components/catalog/catalog-filters-bar";
+import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import type { SiteContent } from "@/lib/domain/site-content-types";
 
 export const revalidate = 60;
@@ -89,6 +90,7 @@ export default async function CatalogoPage({
 
   return (
     <div className="bg-[var(--color-background)]">
+      <PageViewTracker page="catalogo" />
       {/* Page header */}
       <div className="border-b border-[var(--color-border)] px-6 py-8 md:px-12">
         <div className="mx-auto max-w-[1440px]">
