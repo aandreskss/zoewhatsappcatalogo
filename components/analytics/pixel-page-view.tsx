@@ -8,10 +8,9 @@ declare global {
 }
 
 /**
- * Dispara fbq('track', 'PageView') en cada cambio de ruta.
- * Se salta el primer render porque el snippet de inicialización del pixel
- * ya dispara PageView al cargar; este componente solo cubre las
- * navegaciones SPA posteriores (Next.js no re-ejecuta el script).
+ * Dispara fbq('track', 'PageView') en cada navegación SPA.
+ * El primer PageView lo maneja el onLoad de fbevents.js en ThirdPartyScripts,
+ * garantizando que dispara solo cuando el script realmente está listo.
  */
 export function PixelPageView() {
   const pathname = usePathname();
