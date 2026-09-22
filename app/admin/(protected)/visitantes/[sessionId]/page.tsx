@@ -4,6 +4,34 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
+type SourceInfo = { label: string; className: string };
+
+function resolveSource(utmSource: string | null, referrer: string | null): SourceInfo {
+  const src = (utmSource ?? "").toLowerCase();
+  const ref = (referrer ?? "").toLowerCase();
+
+  if (src.includes("google") || ref.includes("google.com"))
+    return { label: "Google", className: "bg-blue-50 text-blue-700" };
+  if (src.includes("facebook") || src.includes("fb") || ref.includes("facebook.com"))
+    return { label: "Facebook", className: "bg-[#1877F2]/10 text-[#1877F2]" };
+  if (src.includes("instagram") || ref.includes("instagram.com"))
+    return { label: "Instagram", className: "bg-pink-50 text-pink-700" };
+  if (src.includes("tiktok") || ref.includes("tiktok.com"))
+    return { label: "TikTok", className: "bg-slate-100 text-slate-700" };
+  if (src.includes("whatsapp") || ref.includes("whatsapp.com") || ref.includes("wa.me"))
+    return { label: "WhatsApp", className: "bg-green-50 text-green-700" };
+  if (src.includes("twitter") || src.includes("x.com") || ref.includes("x.com"))
+    return { label: "Twitter / X", className: "bg-slate-100 text-slate-800" };
+  if (utmSource)
+    return { label: utmSource, className: "bg-[#F4EFEc] text-[#29252A]/60" };
+  if (referrer) {
+    let host = referrer;
+    try { host = new URL(referrer).hostname.replace(/^www\./, ""); } catch { /* invalid url */ }
+    return { label: host, className: "bg-[#F4EFEc] text-[#29252A]/60" };
+  }
+  return { label: "Directo", className: "bg-[#F4EFEc] text-[#29252A]/40" };
+}
+
 type AnalyticsEvent = {
   id: string;
   event_type: string;
@@ -125,6 +153,7 @@ export default async function VisitanteDetailPage({
   const reachedCheckout = events.some((e) => e.event_type === "begin_checkout");
   const hasAttribution =
     first.utm_source || first.utm_medium || first.utm_campaign || first.referrer;
+  const source = resolveSource(first.utm_source, first.referrer);
 
   const groups = groupByDate(events);
 
@@ -154,6 +183,10 @@ export default async function VisitanteDetailPage({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="rounded-lg bg-[#C9748A]/10 px-3 py-1.5 font-mono text-sm font-semibold text-[#C9748A]">
             #{sessionId.slice(0, 8)}
+          </span>
+          {/* Traffic source */}
+          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${source.className}`}>
+            {source.label}
           </span>
           {completedPurchase && (
             <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700">
