@@ -8,6 +8,7 @@ declare global {
       capture:  (d: Record<string, string>) => Promise<unknown>;
       purchase: (d: Record<string, unknown>) => Promise<unknown>;
     };
+    fbq?: (...args: unknown[]) => void;
   }
 }
 
@@ -40,6 +41,10 @@ export function VipLeadForm() {
           phone,
           email: email || "",
           source: "vip_form",
+        });
+        window.fbq?.("track", "Lead", {
+          content_name: "Lista VIP",
+          content_category: "vip_form",
         });
       }
     } catch {
