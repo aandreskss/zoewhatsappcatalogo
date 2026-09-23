@@ -6,6 +6,7 @@ import { HomeSectionRenderer } from "@/components/home/home-section-renderer";
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { buildOrganizationJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
 import { WhatsAppBanner } from "@/components/ui/whatsapp-banner";
+import { VipLeadForm } from "@/components/home/vip-lead-form";
 import Link from "next/link";
 import Image from "next/image";
 import type { SiteContent } from "@/lib/domain/site-content-types";
@@ -149,6 +150,71 @@ export default async function HomePage() {
                 <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0" />
               </svg>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* VIP LEAD FORM */}
+      <section className="py-14 md:py-20 px-6 md:px-12">
+        <div
+          style={{
+            maxWidth: 960,
+            margin: "0 auto",
+            borderRadius: 20,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column" as const,
+          }}
+          className="md:flex-row md:!flex"
+        >
+          {/* Panel izquierdo — texto */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, #7B1847 0%, #A0325E 100%)",
+              padding: "40px 36px",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column" as const,
+              justifyContent: "center",
+              gap: 12,
+            }}
+          >
+            <span style={{ fontSize: 28 }}>👑</span>
+            <h2
+              style={{
+                color: "white",
+                fontWeight: 800,
+                fontSize: "clamp(22px, 4vw, 30px)",
+                lineHeight: 1.2,
+                margin: 0,
+              }}
+            >
+              ¿Quieres entrar a nuestra lista VIP?
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 15, margin: 0, lineHeight: 1.5 }}>
+              Entérate antes que nadie de nuestras ofertas, descuentos especiales y nuevas llegadas.
+              Déjanos tus datos y <strong style={{ color: "white" }}>únete gratis</strong>.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, marginTop: 8 }}>
+              {["🎁 Descuentos exclusivos para miembros VIP", "📲 Alertas de nuevas llegadas por WhatsApp", "🔥 Acceso anticipado a remates y liquidaciones"].map((item) => (
+                <div key={item} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Panel derecho — formulario */}
+          <div
+            style={{
+              backgroundColor: "#FDF8FB",
+              padding: "40px 36px",
+              width: "100%",
+              maxWidth: 400,
+            }}
+            className="md:w-[400px]"
+          >
+            <VipLeadForm />
           </div>
         </div>
       </section>

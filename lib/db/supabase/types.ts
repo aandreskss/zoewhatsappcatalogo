@@ -1008,6 +1008,19 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["customer_notes"]["Row"]>;
         Relationships: [];
       };
+      vip_leads: {
+        Row: {
+          id: string;
+          name: string;
+          phone: string;
+          email: string | null;
+          source: string;
+          created_at: string;
+        };
+        Insert: { name: string; phone: string; email?: string | null; source?: string };
+        Update: Partial<Database["public"]["Tables"]["vip_leads"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       variant_availability: {

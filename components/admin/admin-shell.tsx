@@ -34,6 +34,7 @@ import {
   LogOut,
   Menu,
   X,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 
@@ -92,6 +93,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/marketing/home", label: "Home", icon: LayoutDashboard },
       { href: "/admin/marketing/banners", label: "Banners", icon: Image },
+      { href: "/admin/marketing/leads", label: "Lista VIP", icon: Star },
     ],
   },
   {
