@@ -247,3 +247,79 @@ export async function getPublishedProductBySlug(
     })),
   };
 }
+
+/**
+ * Productos relacionados: misma categoría, excluyendo el producto actual.
+ * Si la categoría tiene menos de `limit` productos, completa con los más
+ * recientes del catálogo general.
+ */
+export async function getRelatedProducts(
+  supabase: DB,
+  productId: string,
+  limit = 6,
+): Promise<ProductListItem[]> {
+  const { data: current } = await supabase
+    .from("products")
+    .select("category_id")
+    .eq("id", productId)
+    .maybeSingle();
+
+  const baseQuery = () =>
+    supabase
+      .from("products")
+      .select(
+        `id, name, slug, is_new, is_featured, is_bestseller, badge_custom,
+         product_images(url, is_primary, order),
+         product_variants(price_usd, compare_at_price_usd, status)`,
+      )
+      .eq("status", "published")
+      .is("deleted_at", null)
+      .neq("id", productId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+  const mapRow = (product: {
+    id: string;
+    name: string;
+    slug: string;
+    is_new: boolean;
+    is_featured: boolean;
+    is_bestseller: boolean;
+    badge_custom: string | null;
+    product_images: { url: string; is_primary: boolean; order: number }[] | null;
+    product_variants: { price_usd: number; compare_at_price_usd: number | null; status: string }[] | null;
+  }): ProductListItem => {
+    const images = product.product_images ?? [];
+    const primary =
+      images.find((img) => img.is_primary) ??
+      [...images].sort((a, b) => a.order - b.order)[0] ??
+      null;
+    const activeVariants = (product.product_variants ?? []).filter((v) => v.status === "active");
+    const prices = activeVariants.map((v) => v.price_usd);
+    const compareAtPrices = activeVariants
+      .map((v) => v.compare_at_price_usd)
+      .filter((p): p is number => p !== null);
+    return {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      isNew: product.is_new,
+      isFeatured: product.is_featured,
+      isBestseller: product.is_bestseller,
+      badgeCustom: product.badge_custom,
+      primaryImageUrl: primary?.url ?? null,
+      minPriceUsd: prices.length > 0 ? Math.min(...prices) : null,
+      maxCompareAtPriceUsd: compareAtPrices.length > 0 ? Math.max(...compareAtPrices) : null,
+    };
+  };
+
+  if (current?.category_id) {
+    const { data } = await baseQuery().eq("category_id", current.category_id);
+    const results = (data ?? []).map(mapRow);
+    if (results.length >= 2) return results;
+  }
+
+  // Fallback: productos recientes sin filtro de categoría
+  const { data: fallback } = await baseQuery();
+  return (fallback ?? []).map(mapRow);
+}

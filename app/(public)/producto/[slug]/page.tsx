@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
-import { getPublishedProductBySlug } from "@/lib/domain/catalog";
+import { getPublishedProductBySlug, getRelatedProducts } from "@/lib/domain/catalog";
 import { getAvailabilityForVariants } from "@/lib/domain/inventory";
 import { getVesReferenceRate } from "@/lib/domain/currency";
 import { ProductPageClient } from "@/components/product/product-page-client";
+import { RelatedProducts } from "@/components/product/related-products";
 import { ViewProductTracker } from "@/components/analytics/view-product-tracker";
 import {
   buildProductJsonLd,
@@ -60,12 +61,13 @@ export default async function ProductPage({
   const product = await getPublishedProductBySlug(supabase, slug);
   if (!product) notFound();
 
-  const [availability, vesRate] = await Promise.all([
+  const [availability, vesRate, related] = await Promise.all([
     getAvailabilityForVariants(
       supabase,
       product.variants.map((v) => v.id),
     ),
     getVesReferenceRate(supabase),
+    getRelatedProducts(supabase, product.id, 6),
   ]);
 
   const availableByVariant = new Map<string, number>();
@@ -144,6 +146,12 @@ export default async function ProductPage({
           discountPct={discountPct}
         />
       </div>
+
+      {/* Divisor */}
+      <div className="mx-6 md:mx-12 border-t border-[var(--color-border)]" />
+
+      {/* También te puede gustar */}
+      <RelatedProducts products={related} vesRate={vesRate?.rate ?? null} />
     </div>
   );
 }
