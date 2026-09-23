@@ -147,8 +147,9 @@ export default async function VisitanteDetailPage({
     metadata: (e.metadata ?? {}) as Record<string, unknown>,
   })) as AnalyticsEvent[];
 
-  const first = events[0];
-  const last = events[events.length - 1];
+  if (!events.length) notFound();
+  const first = events[0]!;
+  const last = events[events.length - 1]!;
   const completedPurchase = events.some((e) => e.event_type === "checkout_completed");
   const reachedCheckout = events.some((e) => e.event_type === "begin_checkout");
   const hasAttribution =
