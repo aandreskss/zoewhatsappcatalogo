@@ -2,6 +2,15 @@
 
 import * as React from "react";
 
+declare global {
+  interface Window {
+    SyncLead?: {
+      capture:  (d: Record<string, string>) => Promise<unknown>;
+      purchase: (d: Record<string, unknown>) => Promise<unknown>;
+    };
+  }
+}
+
 export function VipLeadForm() {
   const [name, setName] = React.useState("");
   const [phone, setPhone] = React.useState("");
@@ -26,6 +35,12 @@ export function VipLeadForm() {
         setStatus("error");
       } else {
         setStatus("success");
+        void window.SyncLead?.capture({
+          name,
+          phone,
+          email: email || "",
+          source: "vip_form",
+        });
       }
     } catch {
       setErrorMsg("Error de conexión. Intenta de nuevo.");
