@@ -8,6 +8,7 @@ import { PixelPageView } from "@/components/analytics/pixel-page-view";
 import { ToastProvider } from "@/components/ui/toast";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { CartDrawer } from "@/components/cart/cart-drawer";
 import type { SiteContent } from "@/lib/domain/site-content-types";
 
 /**
@@ -42,6 +43,7 @@ export default async function PublicLayout({ children }: { children: React.React
           <ThirdPartyScripts integrations={integrations} />
           <PixelPageView />
           <SiteHeader categories={categories ?? []} navLinks={content.navLinks} />
+          <CartDrawer />
           <div className="pt-14 md:pt-16">
             {children}
           </div>

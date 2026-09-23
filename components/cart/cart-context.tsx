@@ -17,8 +17,11 @@ export interface ClientCartItem {
 interface CartState {
   items: ClientCartItem[];
   isLoading: boolean;
+  isOpen: boolean;
   itemCount: number;
   subtotalUsd: number;
+  openCart: () => void;
+  closeCart: () => void;
   refresh: () => Promise<void>;
   addItem: (
     variantId: string,
@@ -40,6 +43,10 @@ async function fetchCart(): Promise<ClientCartItem[]> {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = React.useState<ClientCartItem[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const openCart = React.useCallback(() => setIsOpen(true), []);
+  const closeCart = React.useCallback(() => setIsOpen(false), []);
 
   const refresh = React.useCallback(async () => {
     setIsLoading(true);
@@ -113,8 +120,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value: CartState = {
     items,
     isLoading,
+    isOpen,
     itemCount,
     subtotalUsd,
+    openCart,
+    closeCart,
     refresh,
     addItem,
     updateQuantity,

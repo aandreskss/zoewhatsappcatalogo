@@ -32,7 +32,7 @@ export function ProductVariantPicker({
   onVariantMatch?: (variantId: string | null) => void;
 }) {
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, openCart } = useCart();
   const track = useAnalytics();
   const [selected, setSelected] = React.useState<Record<string, string>>({});
   const [feedback, setFeedback] = React.useState<string | null>(null);
@@ -62,9 +62,6 @@ export function ProductVariantPicker({
     setFeedback(null);
     const result = await addItem(matchedVariant.id, 1);
     setIsAdding(false);
-    setFeedback(
-      result.ok ? "Agregado al carrito." : (result.error ?? "No se pudo agregar."),
-    );
     if (result.ok) {
       track("add_to_cart", {
         entityType: "product_variant",
@@ -78,7 +75,10 @@ export function ProductVariantPicker({
         content_type: "product",
         content_name: product.name,
       });
+      openCart();
       router.refresh();
+    } else {
+      setFeedback(result.error ?? "No se pudo agregar.");
     }
   }
 
