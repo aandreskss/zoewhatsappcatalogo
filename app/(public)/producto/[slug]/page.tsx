@@ -11,6 +11,7 @@ import {
   buildBreadcrumbJsonLd,
   jsonLdScriptProps,
 } from "@/lib/seo/json-ld";
+import { WhatsAppBanner } from "@/components/ui/whatsapp-banner";
 
 export const revalidate = 60;
 
@@ -110,6 +111,9 @@ export default async function ProductPage({
       <script {...jsonLdScriptProps(productJsonLd)} />
       <script {...jsonLdScriptProps(breadcrumbJsonLd)} />
       <ViewProductTracker productId={product.id} productName={product.name} />
+
+      {/* WHATSAPP BANNER */}
+      <WhatsAppBanner />
 
       <div className="mx-auto max-w-[1440px] px-6 md:px-12">
         {/* Breadcrumbs */}

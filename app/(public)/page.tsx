@@ -5,6 +5,7 @@ import { getSiteContent, DEFAULT_SITE_CONTENT } from "@/lib/domain/site-content"
 import { HomeSectionRenderer } from "@/components/home/home-section-renderer";
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { buildOrganizationJsonLd, jsonLdScriptProps } from "@/lib/seo/json-ld";
+import { WhatsAppBanner } from "@/components/ui/whatsapp-banner";
 import Link from "next/link";
 import Image from "next/image";
 import type { SiteContent } from "@/lib/domain/site-content-types";
@@ -73,6 +74,9 @@ export default async function HomePage() {
 
 
       </section>
+
+      {/* WHATSAPP BANNER */}
+      <WhatsAppBanner />
 
       {/* CMS SECTIONS */}
       {sections.length > 0 ? (
