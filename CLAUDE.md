@@ -494,17 +494,19 @@ Todos los componentes que disparan `fbq` tienen `declare global { interface Wind
 
 **Qué es:** plataforma CRM + diagnóstico de leads. Captura contactos, asocia eventos de pixel y permite registrar compras manualmente.
 
-**Scripts en `app/layout.tsx`** (tres bloques, todos coexisten):
+**Scripts en `app/layout.tsx`** (cuatro bloques, todos coexisten):
 1. `sl-config` (`beforeInteractive`) — configura la clave y el host antes de que cargue el SDK
 2. `sl.js` (`afterInteractive`) — SDK principal, expone `window.SyncLead.capture()` y `window.SyncLead.purchase()`
-3. `synclead-collector` (`afterInteractive`) — IIFE diagnóstica; envía cada evento `fbq` al panel de diagnóstico en tiempo real (no reemplazar ni eliminar)
+3. `synclead-collector` (`afterInteractive`) — IIFE diagnóstica; envuelve `window.fbq` y reenvía cada evento `fbq` al colector diagnóstico (`sync-lead-eight.vercel.app`). Versión enriquecida: incluye `visitorId`, UTMs de first-touch, `referrer`, `fbc`, `fbp` en cada evento; captura UTMs/fbclid al cargar; dispara `PageView` automático al final. No reemplazar ni eliminar.
+4. `synclead-pixel` (`afterInteractive`) — dispara `page_view` al endpoint principal de SyncLead (`app.synclead.io`) con el mismo payload enriquecido (visitorId, UTMs, referrer, fbc, fbp).
 
 **Claves de Zoe:**
 - `SyncLeadKey`: `slk_77cc400fe5c0ac8f272a8c6b4d806f42afc71186e850bc96`
-- Token diagnóstico: `de3f204ae3e78bd02bca59adbe09e35f02d6635dbe6f6289`
-- Host: `https://sync-lead-eight.vercel.app`
+- Token diagnóstico / pixel: `de3f204ae3e78bd02bca59adbe09e35f02d6635dbe6f6289`
+- Host diagnóstico: `https://sync-lead-eight.vercel.app`
+- Host principal: `https://app.synclead.io`
 
-**CSP (`next.config.ts`):** `sync-lead-eight.vercel.app` ya está en `script-src` y `connect-src`. Sin esto el script no carga y los `fetch()` del colector fallan silenciosamente.
+**CSP (`next.config.ts`):** `sync-lead-eight.vercel.app` está en `script-src` y `connect-src`; `app.synclead.io` está en `connect-src`. Sin esto los `fetch()`/`sendBeacon()` fallan silenciosamente.
 
 **`window.SyncLead` en `Window`** declarado en `components/checkout/checkout-form.tsx`:
 ```typescript
