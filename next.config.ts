@@ -64,7 +64,7 @@ const nextConfig: NextConfig = {
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://*.supabase.co https://res.cloudinary.com https://placehold.co https://www.facebook.com https://analytics.tiktok.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co https://api.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://analytics.tiktok.com https://www.facebook.com https://sync-lead-eight.vercel.app",
+      "connect-src 'self' https://*.supabase.co https://api.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://analytics.tiktok.com https://www.facebook.com https://sync-lead-eight.vercel.app https://app.synclead.io",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
