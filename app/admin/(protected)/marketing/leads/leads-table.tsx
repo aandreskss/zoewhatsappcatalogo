@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { deleteLeadAction } from "./actions";
 
 interface Lead {
   id: string;
@@ -10,6 +11,48 @@ interface Lead {
   email: string | null;
   source: string;
   created_at: string;
+}
+
+function DeleteLeadButton({ id }: { id: string }) {
+  const [confirm, setConfirm] = React.useState(false);
+  const [pending, startTransition] = React.useTransition();
+
+  if (confirm) {
+    return (
+      <span className="flex items-center gap-1">
+        <button
+          onClick={() =>
+            startTransition(async () => {
+              await deleteLeadAction(id);
+              setConfirm(false);
+            })
+          }
+          disabled={pending}
+          className="text-[10px] font-semibold text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded disabled:opacity-50"
+        >
+          {pending ? "…" : "Sí"}
+        </button>
+        <button
+          onClick={() => setConfirm(false)}
+          className="text-[10px] font-semibold text-[#29252A]/60 hover:text-[#29252A] px-2 py-0.5 rounded border border-[#EBE0E7]"
+        >
+          No
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirm(true)}
+      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50 text-[#29252A]/30 hover:text-red-500"
+      title="Eliminar"
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+      </svg>
+    </button>
+  );
 }
 
 function formatDate(iso: string) {
@@ -106,7 +149,7 @@ export function LeadsTable({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#EBE0E7]">
-                {["Nombre", "Teléfono", "Email", "Fecha de registro"].map((h) => (
+                {["Nombre", "Teléfono", "Email", "Fecha de registro", ""].map((h) => (
                   <th
                     key={h}
                     className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#29252A]/40"
@@ -120,7 +163,7 @@ export function LeadsTable({
               {leads.map((lead, i) => (
                 <tr
                   key={lead.id}
-                  className={i % 2 === 0 ? "bg-white" : "bg-[#FDF8FB]"}
+                  className={`group ${i % 2 === 0 ? "bg-white" : "bg-[#FDF8FB]"}`}
                 >
                   <td className="px-5 py-3.5 font-medium text-[#29252A]">{lead.name}</td>
                   <td className="px-5 py-3.5 text-[#29252A]/80">
@@ -144,6 +187,9 @@ export function LeadsTable({
                   </td>
                   <td className="px-5 py-3.5 text-[#29252A]/50 text-xs whitespace-nowrap">
                     {formatDate(lead.created_at)}
+                  </td>
+                  <td className="px-3 py-3.5 text-right">
+                    <DeleteLeadButton id={lead.id} />
                   </td>
                 </tr>
               ))}
