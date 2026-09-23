@@ -155,65 +155,34 @@ export default async function HomePage() {
       </section>
 
       {/* VIP LEAD FORM */}
-      <section className="py-14 md:py-20 px-6 md:px-12">
-        <div
-          style={{
-            maxWidth: 960,
-            margin: "0 auto",
-            borderRadius: 20,
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column" as const,
-          }}
-          className="md:flex-row md:!flex"
-        >
+      <section className="py-14 md:py-20 px-6 md:px-12 flex justify-center">
+        <div className="w-full max-w-[960px] rounded-[20px] overflow-hidden flex flex-col md:flex-row">
           {/* Panel izquierdo — texto */}
           <div
-            style={{
-              background: "linear-gradient(135deg, #7B1847 0%, #A0325E 100%)",
-              padding: "40px 36px",
-              flex: 1,
-              display: "flex",
-              flexDirection: "column" as const,
-              justifyContent: "center",
-              gap: 12,
-            }}
+            className="flex-1 flex flex-col justify-center gap-3 p-10 md:p-14"
+            style={{ background: "linear-gradient(135deg, #7B1847 0%, #A0325E 100%)" }}
           >
-            <span style={{ fontSize: 28 }}>👑</span>
-            <h2
-              style={{
-                color: "white",
-                fontWeight: 800,
-                fontSize: "clamp(22px, 4vw, 30px)",
-                lineHeight: 1.2,
-                margin: 0,
-              }}
-            >
+            <span className="text-3xl">👑</span>
+            <h2 className="text-[clamp(22px,4vw,30px)] font-extrabold text-white leading-tight m-0">
               ¿Quieres entrar a nuestra lista VIP?
             </h2>
-            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 15, margin: 0, lineHeight: 1.5 }}>
+            <p className="text-[15px] text-white/85 leading-relaxed m-0">
               Entérate antes que nadie de nuestras ofertas, descuentos especiales y nuevas llegadas.
-              Déjanos tus datos y <strong style={{ color: "white" }}>únete gratis</strong>.
+              Déjanos tus datos y <strong className="text-white">únete gratis</strong>.
             </p>
-            <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, marginTop: 8 }}>
-              {["🎁 Descuentos exclusivos para miembros VIP", "📲 Alertas de nuevas llegadas por WhatsApp", "🔥 Acceso anticipado a remates y liquidaciones"].map((item) => (
-                <div key={item} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>{item}</span>
-                </div>
+            <div className="flex flex-col gap-2 mt-2">
+              {[
+                "🎁 Descuentos exclusivos para miembros VIP",
+                "📲 Alertas de nuevas llegadas por WhatsApp",
+                "🔥 Acceso anticipado a remates y liquidaciones",
+              ].map((item) => (
+                <span key={item} className="text-[14px] text-white/90">{item}</span>
               ))}
             </div>
           </div>
 
           {/* Panel derecho — formulario */}
-          <div
-            style={{
-              backgroundColor: "#FDF8FB",
-              padding: "40px 36px",
-              width: "100%",
-              maxWidth: 400,
-            }}
-            className="md:w-[400px]"
-          >
+          <div className="w-full md:w-[400px] bg-[#FDF8FB] p-10 md:p-14">
             <VipLeadForm />
           </div>
         </div>
