@@ -73,6 +73,7 @@ Los tipos son **manuales**, no auto-generados. Cuando se agrega un campo a la DB
 - Migración `0025_fix_user_roles_read_own.sql`: agrega policy `user_read_own_roles` en `user_roles` — defensa en profundidad para que usuarios autenticados lean sus propias filas vía RLS.
 - Migración `0026_allow_duplicate_sku.sql`: elimina el constraint `UNIQUE` de `products.sku` y `product_variants.sku`. El SKU identifica un modelo/estilo, no un registro único — el mismo SKU puede repetirse en distintos colores o tallas.
 - Migración `0027_delete_order.sql`: agrega columna `deleted_at timestamptz` en `orders` (soft-delete) y RPC `delete_order_with_restoration(p_order_id, p_user_id)`. Antes de correr en Supabase, asegurarse de que el RPC no exista — es idempotente con `CREATE OR REPLACE`.
+- Migración `0028_vip_leads.sql`: crea tabla `vip_leads` (id, name, phone, email, source, created_at). RLS habilitado con policy `public_insert_vip_leads` que permite INSERT sin autenticación (el formulario es público).
 
 ### Server Actions
 - Siempre empezar con `await requireAdminUser([...roles])` antes de cualquier mutación.
@@ -108,6 +109,7 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 | `/admin/entrega/horarios` | Horarios de atención |
 | `/admin/marketing/home` | Secciones de la home |
 | `/admin/marketing/banners` | Banners |
+| `/admin/marketing/leads` | Lista VIP — leads captados desde el formulario de la home |
 | `/admin/integraciones/analytics` | GA4 · GTM · Meta Pixel · TikTok · Google Search Console |
 | `/admin/integraciones/fina` | Fina Partner: exportar pedidos CSV / importar inventario CSV |
 | `/admin/reportes` | Reportes |
@@ -381,6 +383,49 @@ Todas las actions revalidan `/admin/entrega/sucursales`, `/admin/entrega/pickup`
 ### Hero section
 `app/(public)/page.tsx` renderiza una sección Hero con imagen de fondo (Unsplash `photo-1483985988355-763728e1935b`) + dos gradientes superpuestos (lateral + vertical) para legibilidad del texto. No usar el bloque `"hero"` de `home_sections` para este header — es un componente fijo en la página.
 
+### WhatsApp Banner
+`components/ui/whatsapp-banner.tsx` — Server Component (sin `"use client"`). Banner de ancho completo con gradiente vino `#7B1847 → #A0325E`, icono WhatsApp en `#25D366`, y CTA "Ver catálogo →". Explica que las compras se realizan por WhatsApp. Está montado en `app/(public)/page.tsx` (después del hero) y en `app/(public)/producto/[slug]/page.tsx` (sobre el contenido del producto).
+
+### Formulario Lista VIP
+`components/home/vip-lead-form.tsx` — Client Component. Captura nombre, teléfono/WhatsApp (requeridos) y email (opcional). Al enviar exitosamente:
+1. Llama `POST /api/vip-leads` — rate limit 3 req/10 min por IP, validación Zod, inserta en tabla `vip_leads`
+2. Dispara `window.SyncLead?.capture({ name, phone, email, source: "vip_form" })`
+3. Dispara `window.fbq?.('track', 'Lead', { content_name: 'Lista VIP', content_category: 'vip_form' })` — también capturado automáticamente por el wrapper `synclead-collector`
+
+El formulario está en `app/(public)/page.tsx` dentro de un panel de dos columnas (panel vino con beneficios + panel blanco con el form). La sección usa `flex flex-col md:flex-row` puro Tailwind — **no mezclar inline `display: "flex"` con `md:flex-row`** ya que genera conflictos.
+
+### Lista VIP — admin
+- **Página:** `app/admin/(protected)/marketing/leads/page.tsx` — stats (total, con email, esta semana) + tabla buscable
+- **Tabla:** `app/admin/(protected)/marketing/leads/leads-table.tsx` — búsqueda por nombre/teléfono/email, exportar CSV (con BOM `"﻿"` para Excel), borrado por fila con confirmación de dos pasos (hover → ícono basura → "Sí / No")
+- **Actions:** `app/admin/(protected)/marketing/leads/actions.ts` — `deleteLeadAction(id)` requiere roles `super_admin | admin | sales`
+- **Roles:** `super_admin`, `admin`, `sales` pueden ver y gestionar la lista
+
+## Carrito — drawer de preview
+
+`components/cart/cart-drawer.tsx` — Client Component, drawer deslizable desde la derecha. Se abre automáticamente cuando el usuario agrega un producto al carrito (en `components/product/product-variant-picker.tsx` — llama `openCart()` en lugar del feedback de texto anterior).
+
+**Estado global:** `components/cart/cart-context.tsx` expone `isOpen`, `openCart()`, `closeCart()` junto al estado del carrito. El drawer está montado en `app/(public)/layout.tsx` (a nivel raíz, fuera del Navbar) — **no moverlo dentro del Navbar** porque `position: fixed` tiene problemas con `transform` del Navbar en scroll.
+
+**Diseño:**
+- Header vino `#7B1847`, backdrop oscuro semitransparente con click-to-close
+- Lista de ítems: imagen 64×64, nombre, variante, precio × cantidad
+- Footer: subtotal + botón "Llenar mis datos y pedir por WhatsApp 💬" → `/checkout` + "Seguir comprando"
+- Body scroll lock vía `useEffect` en `isOpen`
+- Posicionamiento y transición via estilos inline (mismo patrón que el menú móvil — ver regla en sección "Menú hamburguesa móvil")
+
+## Productos relacionados
+
+`components/product/related-products.tsx` — Server Component. Muestra grid de productos de la misma categoría bajo el título "También te puede gustar". Retorna `null` si no hay productos.
+
+- Grid: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6`
+- Reutiliza el componente `ProductCard` existente
+- Montado en `app/(public)/producto/[slug]/page.tsx` con divisor `border-t` antes del bloque
+
+**Lógica de datos:** `getRelatedProducts(supabase, productId, limit=6)` en `lib/domain/catalog.ts`:
+1. Obtiene `category_id` del producto actual
+2. Busca productos de la misma categoría excluyendo el actual
+3. Si hay menos de 2 resultados, hace fallback a productos recientes
+
 ## Checkout (`app/(public)/checkout/`)
 
 Componente principal: `components/checkout/checkout-form.tsx` (Client Component).
@@ -479,6 +524,7 @@ El detalle de pedido (`/admin/pedidos/[id]`) incluye enlace "Ver perfil de clien
 | `AddToCart` | Usuario agrega variante al carrito | `components/product/product-variant-picker.tsx` |
 | `InitiateCheckout` | Página de checkout monta con carrito no vacío | `components/checkout/checkout-form.tsx` (useEffect al montar) |
 | `Lead` | Pedido registrado exitosamente | `components/checkout/lead-tracker.tsx` (montado en `/checkout/confirmacion`) |
+| `Lead` | Formulario Lista VIP enviado con éxito | `components/home/vip-lead-form.tsx` (`content_name: "Lista VIP"`) |
 | `Contact` | Usuario abre WhatsApp desde la confirmación | `components/checkout/whatsapp-cta.tsx` (onClick del botón) |
 | `Purchase` | **Manual** — admin confirma pago recibido por WhatsApp | Pendiente: botón en `/admin/pedidos/[id]` que llame `SyncLead.purchase()` |
 
