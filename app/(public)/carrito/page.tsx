@@ -125,7 +125,7 @@ export default function CartPage() {
             Algunos productos ya no están disponibles. Quítalos del carrito para continuar.
           </p>
           <Button size="lg" className="w-full" disabled>
-            Finalizar pedido
+            Pedir por WhatsApp
           </Button>
         </div>
       ) : (
@@ -138,7 +138,7 @@ export default function CartPage() {
               })
             }
           >
-            Finalizar pedido
+            Pedir por WhatsApp
           </Link>
         </Button>
       )}

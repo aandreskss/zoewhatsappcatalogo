@@ -276,7 +276,7 @@ export async function createOrder(
       delivery_method: params.input.delivery.method,
       delivery_address_id: deliveryAddressId ?? "",
       shipping_zone_id: shippingZoneId ?? "",
-      payment_method_id: params.input.paymentMethodId,
+      payment_method_id: params.input.paymentMethodId ?? "",
       payment_notes: params.input.paymentNotes ?? "",
       source: params.input.source ?? {},
       idempotency_key: params.input.idempotencyKey,
@@ -308,13 +308,15 @@ export async function createOrder(
     ? (await supabase.from("stores").select("name").eq("id", storeId).maybeSingle()).data
     : null;
 
-  const paymentMethod = (
-    await supabase
-      .from("payment_methods")
-      .select("name")
-      .eq("id", params.input.paymentMethodId)
-      .maybeSingle()
-  ).data;
+  const paymentMethod = params.input.paymentMethodId
+    ? (
+        await supabase
+          .from("payment_methods")
+          .select("name")
+          .eq("id", params.input.paymentMethodId)
+          .maybeSingle()
+      ).data
+    : null;
 
   const deliveryLabel =
     params.input.delivery.method === "pickup"

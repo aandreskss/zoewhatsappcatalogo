@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,7 +105,7 @@ export function CheckoutForm({
         email: String(formData.get("email") || ""),
       },
       delivery,
-      paymentMethodId: String(formData.get("paymentMethodId")),
+      paymentMethodId: String(formData.get("paymentMethodId") || ""),
       paymentNotes: String(formData.get("paymentNotes") || ""),
       idempotencyKey,
       website: String(formData.get("website") || ""),
@@ -157,6 +158,36 @@ export function CheckoutForm({
         <label htmlFor="website">No completar este campo</label>
         <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
+
+      {/* Resumen del pedido */}
+      <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-muted)] p-4">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)]">
+          Tu pedido
+        </h2>
+        <ul className="flex flex-col gap-3">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-center gap-3">
+              <div className="relative size-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-white">
+                {item.imageUrl ? (
+                  <Image src={item.imageUrl} alt={item.productName} fill className="object-cover" />
+                ) : null}
+              </div>
+              <div className="flex flex-1 flex-col gap-0.5 min-w-0">
+                <span className="truncate text-sm font-medium">{item.productName}</span>
+                <span className="text-xs text-[var(--color-muted-foreground)]">{item.variantLabel}</span>
+                <span className="text-xs text-[var(--color-muted-foreground)]">Cant. {item.quantity}</span>
+              </div>
+              <span className="shrink-0 text-sm font-semibold">
+                {formatUsd(item.currentPriceUsd * item.quantity)}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-3">
+          <span className="text-sm text-[var(--color-muted-foreground)]">Subtotal</span>
+          <span className="text-sm font-semibold">{formatUsd(subtotalUsd)}</span>
+        </div>
+      </section>
 
       {/* Datos del cliente */}
       <section className="flex flex-col gap-3">
@@ -293,21 +324,25 @@ export function CheckoutForm({
 
       {/* Pago */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-[var(--color-muted-foreground)] uppercase">
-          Pago preferido
-        </h2>
+        <div>
+          <h2 className="text-sm font-semibold text-[var(--color-muted-foreground)] uppercase">
+            ¿Cómo prefieres pagar?
+          </h2>
+          <p className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
+            Opcional — el pago se acuerda durante la conversación por WhatsApp, no en esta página.
+          </p>
+        </div>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="paymentMethodId">Método</Label>
+          <Label htmlFor="paymentMethodId">Método (opcional)</Label>
           <select
             id="paymentMethodId"
             name="paymentMethodId"
-            required
             disabled={isSubmitting}
             value={selectedMethodId}
             onChange={(e) => setSelectedMethodId(e.target.value)}
             className="h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
           >
-            <option value="">Selecciona un método</option>
+            <option value="">Sin preferencia</option>
             {paymentMethods.map((method) => (
               <option key={method.id} value={method.id}>
                 {method.name}
@@ -359,9 +394,15 @@ export function CheckoutForm({
 
       {error ? <p className="text-sm text-[var(--color-error)]">{error}</p> : null}
 
-      <Button type="submit" size="lg" disabled={isSubmitting}>
-        {isSubmitting ? "Enviando…" : "Enviar pedido por WhatsApp"}
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button type="submit" size="lg" disabled={isSubmitting}>
+          {isSubmitting ? "Preparando tu pedido…" : "Abrir WhatsApp y enviar mi pedido"}
+        </Button>
+        <p className="text-center text-xs text-[var(--color-muted-foreground)]">
+          Se abrirá un mensaje preparado con tu pedido. Revísalo y pulsa{" "}
+          <strong>Enviar</strong> en WhatsApp para completar.
+        </p>
+      </div>
     </form>
   );
 }

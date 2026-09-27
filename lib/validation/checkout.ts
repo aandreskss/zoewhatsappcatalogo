@@ -48,7 +48,7 @@ export const checkoutDeliverySchema = z.discriminatedUnion("method", [
 export const createOrderSchema = z.object({
   customer: checkoutCustomerSchema,
   delivery: checkoutDeliverySchema,
-  paymentMethodId: z.string().uuid("Selecciona un método de pago"),
+  paymentMethodId: z.string().uuid("Método de pago inválido").optional().or(z.literal("")),
   paymentNotes: z.string().trim().max(300).optional(),
   idempotencyKey: z.string().uuid(),
   // Honeypot antispam (sección 23 del plan) — un cliente real nunca manda

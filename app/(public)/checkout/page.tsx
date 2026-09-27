@@ -29,7 +29,11 @@ export default async function CheckoutPage() {
 
   return (
     <main className="mx-auto max-w-xl px-4 py-8">
-      <h1 className="mb-6 text-xl font-semibold">Finalizar pedido</h1>
+      <h1 className="mb-1 text-xl font-semibold">Envía tu pedido a Zoe por WhatsApp</h1>
+      <p className="mb-6 text-sm text-[var(--color-muted-foreground)]">
+        No pagarás en esta página. Al continuar, se abrirá WhatsApp con los productos que elegiste.
+        Nuestro equipo confirmará disponibilidad, entrega y forma de pago contigo.
+      </p>
       <CheckoutForm
         stores={stores ?? []}
         shippingZones={zones ?? []}
