@@ -45,7 +45,7 @@ export default async function HomePage() {
           src={content.heroImageUrl || "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=85&auto=format&fit=crop"}
           alt="Zoe Shop"
           fill
-          className="object-cover object-center"
+          className="object-cover object-bottom md:object-center"
           priority
         />
         {/* Overlays for text readability */}
