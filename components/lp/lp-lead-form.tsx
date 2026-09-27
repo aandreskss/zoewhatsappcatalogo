@@ -2,6 +2,16 @@
 
 import { useState } from "react"
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void
+    SyncLead?: {
+      capture: (d: Record<string, string>) => Promise<unknown>
+      purchase: (d: Record<string, unknown>) => Promise<unknown>
+    }
+  }
+}
+
 interface Props {
   whatsappNumber: string
   whatsappMessage: string
@@ -52,6 +62,18 @@ export function LPLeadForm({
         throw new Error(data.error ?? "Error al guardar tus datos")
       }
       setSubmitted(true)
+      // Meta Pixel — Lead
+      window.fbq?.("track", "Lead", {
+        content_name: "Lista VIP Promo 50%",
+        content_category: source,
+      })
+      // SyncLead — capture lead
+      void window.SyncLead?.capture({
+        name: name.trim(),
+        phone: phone.trim(),
+        email: "",
+        source,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Algo salió mal. Intenta de nuevo.")
     } finally {
