@@ -430,6 +430,11 @@ El formulario está en `app/(public)/page.tsx` dentro de un panel de dos columna
 
 Componente principal: `components/checkout/checkout-form.tsx` (Client Component).
 
+**Modelo mental:** Zoe es un catálogo WhatsApp. El checkout **no procesa pagos** — solo registra el pedido en servidor y genera un mensaje pre-armado para WhatsApp. Toda la UX debe reflejarlo: el título de la página es "Envía tu pedido a Zoe por WhatsApp", el botón dice "Abrir WhatsApp y enviar mi pedido", y hay una nota debajo del botón que aclara que el usuario debe pulsar Enviar dentro de WhatsApp para completar.
+
+### Resumen del pedido
+El formulario muestra un card al inicio (antes de los campos) con foto, nombre, variante, cantidad y precio de cada item del carrito, más el subtotal. El usuario ve exactamente qué va a enviar antes de llenar sus datos.
+
 ### Métodos de entrega
 - **Retiro en tienda** (`pickup`): selecciona sucursal.
 - **Delivery** (`delivery`): selecciona zona de delivery + dirección + punto de referencia. **No pide estado ni ciudad** — el delivery es siempre en Valencia, Carabobo, así que se hardcodean en el payload (`state: "Carabobo"`, `city: "Valencia"`). La validación Zod del servidor sí exige esos campos, pero el frontend los envía implícitamente.
@@ -442,10 +447,10 @@ El resumen de totales muestra desglose cuando hay delivery:
 - Total estimado = subtotal + costo de delivery
 
 ### Métodos de pago
-Al seleccionar un método de pago, si tiene `instructions` en DB, aparece un cuadro de instrucciones con borde `#F0B8D0` y fondo `#FDF0F6`. El componente trackea `selectedMethodId` con `useState`.
+Campo **opcional** — el pago real se acuerda durante la conversación de WhatsApp, no en la web. La sección se titula "¿Cómo prefieres pagar?" con nota aclaratoria. La opción por defecto es "Sin preferencia" (string vacío). Si el usuario elige un método y tiene `instructions` en DB, aparece un cuadro con borde `#F0B8D0` y fondo `#FDF0F6`. `paymentMethodId` en el schema Zod acepta UUID o string vacío (`z.string().uuid().optional().or(z.literal(""))`). En `lib/domain/orders.ts` la query de `payment_methods` está guardada con condicional (`params.input.paymentMethodId ? ... : null`) para no ejecutar la consulta cuando está vacío. El RPC recibe `payment_method_id: paymentMethodId ?? ""` — el SQL hace `nullif(..., '')::uuid` que convierte el string vacío en NULL.
 
 ### Carrito con items no disponibles
-`app/(public)/carrito/page.tsx`: si algún item del carrito tiene `isAvailable === false`, el botón "Finalizar pedido" se deshabilita y muestra mensaje de error. El usuario debe quitar el item antes de continuar.
+`app/(public)/carrito/page.tsx`: si algún item del carrito tiene `isAvailable === false`, el botón "Pedir por WhatsApp" se deshabilita y muestra mensaje de error. El usuario debe quitar el item antes de continuar.
 
 ### Validación del pedido
 `lib/validation/checkout.ts` → `createOrderSchema`. El Route Handler `app/api/orders/route.ts` siempre revalida precio y stock en servidor — el frontend nunca es la única validación.
