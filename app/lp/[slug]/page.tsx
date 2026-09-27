@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
-import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server"
-import { listPublishedProducts } from "@/lib/domain/catalog"
 import { getLPConfig } from "@/lib/lps"
 import { PromoLP } from "@/components/lp/promo-lp"
 
-export const revalidate = 3600
+export const revalidate = false
 
 export async function generateMetadata({
   params,
@@ -30,12 +28,5 @@ export default async function LPPage({
   const { slug } = await params
   const config = getLPConfig(slug)
   if (!config) notFound()
-
-  const supabase = createSupabaseServiceRoleClient()
-  const products = await listPublishedProducts(supabase, {
-    categorySlug: config.categorySlug,
-    limit: 12,
-  }).catch(() => [])
-
-  return <PromoLP config={config} products={products} />
+  return <PromoLP config={config} />
 }

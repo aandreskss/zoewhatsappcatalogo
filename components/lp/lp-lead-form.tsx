@@ -62,31 +62,30 @@ export function LPLeadForm({
   if (submitted) {
     return (
       <div className="text-center space-y-6 py-4">
-        <div className="text-6xl animate-bounce">🎉</div>
+        <div className="text-6xl">🎉</div>
         <div>
           <h3 className="text-2xl font-black text-white mb-2">
             ¡Listo{firstName ? `, ${firstName}` : ""}!
           </h3>
-          <p className="text-[#B8A0AE]">
-            Ya estás en nuestra Lista VIP. Te contactamos muy pronto con el catálogo y tu precio especial.
+          <p className="text-[#B8A0AE] leading-relaxed">
+            Ya estás en nuestra Lista VIP. Ahora puedes solicitar tu precio especial directo por WhatsApp:
           </p>
         </div>
         <a
           href={waUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20BA5A] text-white px-8 py-4 rounded-2xl font-bold text-lg transition-colors w-full"
+          className="inline-flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20BA5A] text-white px-8 py-5 rounded-2xl font-black text-lg transition-colors w-full shadow-lg shadow-[#25D366]/20"
         >
           <WhatsAppIcon />
           {ctaLabel}
         </a>
-        <p className="text-xs text-[#B8A0AE]">O espera nuestro mensaje — te escribimos pronto 💬</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="text-center">
         <h2 className="text-2xl md:text-3xl font-black text-white mb-2">{formTitle}</h2>
         <p className="text-[#B8A0AE] text-sm leading-relaxed">{formSubtitle}</p>
@@ -99,7 +98,7 @@ export function LPLeadForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-4 text-white placeholder-white/40 focus:outline-none focus:border-[#7B1847] focus:ring-2 focus:ring-[#7B1847]/40 transition text-base"
+          className="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-4 text-white placeholder-white/40 focus:outline-none focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/30 transition text-base"
         />
         <input
           type="tel"
@@ -107,7 +106,7 @@ export function LPLeadForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           required
-          className="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-4 text-white placeholder-white/40 focus:outline-none focus:border-[#7B1847] focus:ring-2 focus:ring-[#7B1847]/40 transition text-base"
+          className="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-4 text-white placeholder-white/40 focus:outline-none focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/30 transition text-base"
         />
 
         {error && (
@@ -117,30 +116,21 @@ export function LPLeadForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#E8C96E] hover:bg-[#D4A857] disabled:opacity-50 disabled:cursor-not-allowed text-[#0D0408] font-black text-lg py-4 rounded-2xl transition-colors"
+          className="w-full flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20BA5A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-lg py-5 rounded-2xl transition-colors shadow-lg shadow-[#25D366]/20"
         >
-          {loading ? "Guardando..." : "Quiero mis precios VIP →"}
+          {loading ? (
+            "Guardando..."
+          ) : (
+            <>
+              <WhatsAppIcon />
+              {ctaLabel}
+            </>
+          )}
         </button>
       </form>
 
-      <div className="flex items-center gap-3 text-[#B8A0AE]">
-        <div className="flex-1 border-t border-white/10" />
-        <span className="text-xs shrink-0">o contáctanos directo</span>
-        <div className="flex-1 border-t border-white/10" />
-      </div>
-
-      <a
-        href={waUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20BA5A] text-white px-6 py-4 rounded-2xl font-bold text-base transition-colors"
-      >
-        <WhatsAppIcon />
-        {ctaLabel}
-      </a>
-
       <p className="text-center text-xs text-[#B8A0AE]">
-        🔒 Sin spam. Solo te contactamos para enviarte los precios especiales.
+        🔒 Sin spam. Solo te contactamos con tu precio especial.
       </p>
     </div>
   )
