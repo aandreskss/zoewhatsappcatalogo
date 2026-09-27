@@ -4,9 +4,10 @@ import { createSupabaseServiceRoleClient } from "@/lib/db/supabase/server";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 const schema = z.object({
-  name:  z.string().trim().min(2, "Ingresa tu nombre").max(100),
-  phone: z.string().trim().min(7, "Ingresa un teléfono válido").max(30),
-  email: z.string().trim().email("Email inválido").optional().or(z.literal("")),
+  name:   z.string().trim().min(2, "Ingresa tu nombre").max(100),
+  phone:  z.string().trim().min(7, "Ingresa un teléfono válido").max(30),
+  email:  z.string().trim().email("Email inválido").optional().or(z.literal("")),
+  source: z.string().trim().max(60).optional(),
 });
 
 export async function POST(request: Request) {
@@ -28,14 +29,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name, phone, email } = parsed.data;
+  const { name, phone, email, source } = parsed.data;
   const supabase = createSupabaseServiceRoleClient();
 
   const { error } = await supabase.from("vip_leads").insert({
     name,
     phone,
     email: email || null,
-    source: "home_form",
+    source: source ?? "home_form",
   });
 
   if (error) {
