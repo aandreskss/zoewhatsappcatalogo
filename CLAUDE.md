@@ -110,6 +110,7 @@ La tabla `user_roles` tiene clave primaria surrogate `id: string` (agregada en m
 | `/admin/marketing/home` | Secciones de la home |
 | `/admin/marketing/banners` | Banners |
 | `/admin/marketing/leads` | Lista VIP — leads captados desde el formulario de la home |
+| `/admin/marketing/ab-test` | Prueba A/B de tráfico — configura split catálogo/landing page |
 | `/admin/integraciones/analytics` | GA4 · GTM · Meta Pixel · TikTok · Google Search Console |
 | `/admin/integraciones/fina` | Fina Partner: exportar pedidos CSV / importar inventario CSV |
 | `/admin/reportes` | Reportes |
@@ -545,11 +546,12 @@ Todos los componentes que disparan `fbq` tienen `declare global { interface Wind
 
 **Qué es:** plataforma CRM + diagnóstico de leads. Captura contactos, asocia eventos de pixel y permite registrar compras manualmente.
 
-**Scripts en `app/layout.tsx`** (cuatro bloques, todos coexisten):
+**Scripts en `app/layout.tsx`** (cinco bloques, todos coexisten):
 1. `sl-config` (`beforeInteractive`) — configura la clave y el host antes de que cargue el SDK
-2. `sl.js` (`afterInteractive`) — SDK principal, expone `window.SyncLead.capture()` y `window.SyncLead.purchase()`
-3. `synclead-collector` (`afterInteractive`) — IIFE diagnóstica; envuelve `window.fbq` y reenvía cada evento `fbq` al colector diagnóstico (`sync-lead-eight.vercel.app`). Versión enriquecida: incluye `visitorId`, UTMs de first-touch, `referrer`, `fbc`, `fbp` en cada evento; captura UTMs/fbclid al cargar; dispara `PageView` automático al final. No reemplazar ni eliminar.
-4. `synclead-pixel` (`afterInteractive`) — dispara `page_view` al endpoint principal de SyncLead (`app.synclead.io`) con el mismo payload enriquecido (visitorId, UTMs, referrer, fbc, fbp).
+2. `sl-ab-url` (`beforeInteractive`) — lee la cookie `_sl_ab_dest` (puesta por `proxy.ts` cuando el A/B test reescribe a la landing), construye `window._sl_effective_url = origin + path` y borra la cookie inmediatamente. Debe existir antes que los scripts `afterInteractive` para que la URL efectiva esté disponible cuando se dispare el PageView.
+3. `sl.js` (`afterInteractive`) — SDK principal, expone `window.SyncLead.capture()` y `window.SyncLead.purchase()`
+4. `synclead-collector` (`afterInteractive`) — IIFE diagnóstica; envuelve `window.fbq` y reenvía cada evento `fbq` al colector diagnóstico (`sync-lead-eight.vercel.app`). Versión enriquecida: incluye `visitorId`, UTMs de first-touch, `referrer`, `fbc`, `fbp` en cada evento; captura UTMs/fbclid al cargar; dispara `PageView` automático al final. Usa `window._sl_effective_url || window.location.href` como `pageUrl`. No reemplazar ni eliminar.
+5. `synclead-pixel` (`afterInteractive`) — dispara `page_view` al endpoint principal de SyncLead (`app.synclead.io`) con el mismo payload enriquecido (visitorId, UTMs, referrer, fbc, fbp). Usa `window._sl_effective_url || location.href` como `pageUrl`.
 
 **Claves de Zoe:**
 - `SyncLeadKey`: `slk_77cc400fe5c0ac8f272a8c6b4d806f42afc71186e850bc96`
@@ -581,6 +583,71 @@ void window.SyncLead?.capture({
 ```
 
 **`purchase()`** — registrar manualmente desde el admin cuando el pago se confirma por WhatsApp. **No disparar automáticamente** — el clic en WhatsApp no es una venta confirmada. Implementación pendiente en `/admin/pedidos/[id]`.
+
+---
+
+## Sistema de A/B testing
+
+Permite dividir el tráfico entrante en la raíz `/` entre el catálogo y una landing page, con asignación sticky por cookie.
+
+### Archivos clave
+| Archivo | Rol |
+|---|---|
+| `proxy.ts` | Implementa el split a nivel de middleware Next.js. Lee config de `company_settings.ab_test_config` (caché en memoria, TTL 60 s). Omite bots. Asigna variante con `Math.random()`. En variante "lp": rewrite transparente a la URL configurada. |
+| `lib/domain/ab-test.ts` | Tipo `ABTestConfig { enabled, lpUrl, percentage }`. Leer/escribir en `company_settings` con clave `"ab_test_config"`. |
+| `app/admin/(protected)/marketing/ab-test/page.tsx` + `actions.ts` | Panel admin: toggle, campo URL, slider de porcentaje. Requiere rol `admin` o `super_admin`. |
+| `components/admin/ab-test-form.tsx` | Formulario con visualización en tiempo real ("Catálogo (A): 80% · Landing (B): 20%"). |
+| `components/admin/admin-shell.tsx` | Ícono `Split` (lucide-react) para el link "Prueba A/B" en la sección Marketing del sidebar. |
+
+### Lógica de asignación (proxy.ts)
+1. Si `ab_test_config.enabled === false` → pasar al catálogo normal.
+2. Cookie `zoe_ab` presente → reutilizar variante (sticky, expiry 30 días).
+3. Sin cookie: `Math.random() < percentage / 100` → variante `"lp"`, sino → variante `"catalog"`.
+4. Variante `"lp"` → rewrite a `lpUrl` (default `/lp/promo50`), sin redirect 302. Además, **siempre** setea cookie `_sl_ab_dest = lpUrl` (httpOnly: false, maxAge: 30 s) para que el tracker de SyncLead en el cliente conozca la URL efectiva.
+5. Config cacheada en módulo (60 s TTL) para evitar round-trips a Supabase por request.
+
+**Reglas:**
+- `lpUrl` debe empezar con `/`. Nunca usar URL absoluta.
+- El split se propaga en ≤ 60 s después de guardar en admin.
+- Los bots nunca reciben la variante LP.
+
+### SyncLead tracking con A/B test
+El rewrite transparente de Next.js mantiene la URL del navegador en `/`, por lo que sin el mecanismo de cookie los visitantes redirigidos a la landing aparecerían en SyncLead como visitantes del catálogo. Flujo de corrección:
+1. `proxy.ts` → cookie `_sl_ab_dest=/lp/promo50` (no-httpOnly, 30 s) en cada rewrite LP.
+2. Script `sl-ab-url` (beforeInteractive) → lee la cookie, setea `window._sl_effective_url`, borra la cookie.
+3. `synclead-collector` y `synclead-pixel` → usan `window._sl_effective_url || location.href` como `pageUrl`.
+
+**No borrar ni simplificar** el script `sl-ab-url`: sin él, la landing no aparece en el feed de eventos en vivo ni en la pestaña Visitantes de SyncLead.
+
+---
+
+## Landing pages (`/lp/*`)
+
+### Estructura
+| Archivo | Rol |
+|---|---|
+| `lib/lps/index.ts` | Registry de configs. Cada entrada es `LPConfig { slug, headline, accentText, subheadline, deadline, discountPercent, whatsappNumber, categorySlug, badgeText, formTitle, formSubtitle, source }`. |
+| `app/lp/[slug]/page.tsx` | Ruta dinámica. Llama `getLPConfig(slug)`. 404 si no existe. Robots `noindex,nofollow`. ISR deshabilitado (`revalidate: false`). |
+| `app/lp/layout.tsx` | Layout compartido. Inicializa Meta Pixel (`1112235988051036`) con PageView. |
+| `components/lp/promo-lp.tsx` | Componente único `PromoLP`. Recibe `LPConfig`. Secciones: urgency bar con countdown · hero (copy + imágenes) · grid de 34 zapatos · trust badges · social proof · formulario de captura · footer. |
+| `components/lp/lp-countdown.tsx` | Cuenta regresiva desde `deadline` ISO string. Modo compacto (`1d 02h 45m 30s`) o expandido (4 cajas). |
+| `components/lp/lp-lead-form.tsx` | Captura nombre y teléfono. POST a `/api/vip-leads`. Dispara `fbq('track', 'Lead', {...})` y `window.SyncLead?.capture({...})`. On success: pantalla de celebración + link WhatsApp pre-armado. |
+| `app/api/vip-leads/route.ts` | POST: guarda en tabla `vip_leads`. Rate limit 3 req / 10 min por IP. |
+
+### Hero móvil — regla de imagen
+- Sección móvil usa `style={{ height: "360px" }}` (no menos).
+- La clase de imagen es `object-cover object-bottom` — ancla el bottom de la imagen al bottom del contenedor, mostrando los tacones siempre visibles.
+- **No usar `object-top`**: recorta los tacones.
+
+### SHOE_IMAGES (promo50)
+- 34 imágenes declaradas como constante en `promo-lp.tsx` (rutas `/lp/promo50/zapato-N.jpg`).
+- Hero móvil usa `SHOE_IMAGES[0]`. Hero desktop: collage de `[0]`, `[1]`, `[2]` (primer ítem spanning 2 rows).
+- Grid de galería usa las 34 imágenes en columnas 2-4.
+
+### Diseño
+- Tema oscuro: `bg-[#0D0408]` (negro oscuro violeta).
+- Colores de acento: `#7B1847` (burdeos), `#F0B8D0` (rosa), `#25D366` (WhatsApp verde).
+- Tipografía: headings `font-black` (900), escala hasta `text-7xl` en desktop.
 
 ---
 
