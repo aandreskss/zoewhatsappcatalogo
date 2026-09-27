@@ -35,6 +35,7 @@ import {
   Menu,
   X,
   Star,
+  Split,
   type LucideIcon,
 } from "lucide-react";
 
@@ -94,6 +95,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/marketing/home", label: "Home", icon: LayoutDashboard },
       { href: "/admin/marketing/banners", label: "Banners", icon: Image },
       { href: "/admin/marketing/leads", label: "Lista VIP", icon: Star },
+      { href: "/admin/marketing/ab-test", label: "Prueba A/B", icon: Split },
     ],
   },
   {
