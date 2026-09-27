@@ -106,12 +106,12 @@ export function PromoLP({ config }: Props) {
           </div>
 
           {/* Mobile: single hero image */}
-          <div className="order-1 md:hidden relative rounded-2xl overflow-hidden" style={{ height: "260px" }}>
+          <div className="order-1 md:hidden relative rounded-2xl overflow-hidden" style={{ height: "360px" }}>
             <div className="absolute inset-0 bg-gradient-to-t from-[#0D0408]/50 to-transparent z-10" />
             <div className="absolute top-3 right-3 z-20 bg-[#7B1847] text-white text-xs font-black px-2.5 py-1 rounded-full">
               -{config.discountPercent}%
             </div>
-            <Image src={hero0} alt="Tacón Zoe Shop" fill className="object-cover object-top" sizes="100vw" priority />
+            <Image src={hero0} alt="Tacón Zoe Shop" fill className="object-cover object-bottom" sizes="100vw" priority />
           </div>
 
           {/* Desktop: 3-image collage */}
