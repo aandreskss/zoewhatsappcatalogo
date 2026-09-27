@@ -73,6 +73,14 @@ export async function proxy(request: NextRequest) {
               path: "/",
             })
           }
+          // JS-readable signal so the SyncLead collector reports the effective LP URL
+          // (rewrite keeps browser URL at "/" — without this SyncLead records catalog, not LP)
+          response.cookies.set("_sl_ab_dest", abConfig.lpUrl, {
+            maxAge: 30,
+            httpOnly: false,
+            sameSite: "lax",
+            path: "/",
+          })
           return response
         }
 
